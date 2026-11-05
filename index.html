@@ -46,8 +46,15 @@
 </head>
 <body class="h-screen flex overflow-hidden">
 
+    <!-- Global Loader Overlay -->
+    <div id="loaderOverlay" class="fixed inset-0 bg-slate-950/95 z-[999] flex flex-col items-center justify-center transition-opacity duration-300">
+        <div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <h2 id="loaderText" class="text-xl font-bold text-indigo-400">ডেটা লোড হচ্ছে...</h2>
+        <p class="text-xs text-slate-500 mt-2">অনুগ্রহ করে অপেক্ষা করুন</p>
+    </div>
+
     <!-- Login Overlay -->
-    <div id="loginOverlay" class="fixed inset-0 bg-slate-950 z-[200] flex items-center justify-center transition-opacity duration-300">
+    <div id="loginOverlay" class="fixed inset-0 bg-slate-950 z-[200] flex items-center justify-center transition-opacity duration-300 hidden">
         <div class="bg-slate-900 p-8 rounded-2xl shadow-2xl border border-slate-800 text-center max-w-md w-full mx-4 relative overflow-hidden">
             <!-- Background Decoration -->
             <div class="absolute -top-10 -left-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
@@ -782,6 +789,18 @@
         `;
         document.head.appendChild(style);
 
+        // API URL for Google Apps Script
+        const API_URL = 'https://script.google.com/macros/s/AKfycby6CjmkL66MD5VWwPoAbDpAsOqqM8yS6zk5bP8XMvQKyYKK-_DGSjKsuGKFc_4VDSdNCA/exec';
+
+        // Loader Functions
+        function showLoader(msg) {
+            document.getElementById('loaderText').innerText = msg || "লোড হচ্ছে...";
+            document.getElementById('loaderOverlay').classList.remove('hidden');
+        }
+        function hideLoader() {
+            document.getElementById('loaderOverlay').classList.add('hidden');
+        }
+
         // Default Dates
         document.getElementById('shortListDate').value = new Date().toISOString().split('T')[0];
         document.getElementById('mcDate').value = new Date().toISOString().split('T')[0];
@@ -792,25 +811,67 @@
         document.getElementById('mcFilterMonth').value = new Date().toISOString().slice(0, 7);
         document.getElementById('beFilterMonth').value = new Date().toISOString().slice(0, 7);
 
+        // Start with Empty Data
         let appData = {
-            allowedEmails: [], // Admin can add other emails here
-            capital: [{ id: 1, name: 'নিজস্ব ফান্ড', transactions: [{ id: 101, date: '2026-11-01', details: 'Opening Balance', type: 'dr', amount: 50000 }] }],
-            transaction: [{ id: 1, name: 'Today Transaction', transactions: [{ id: 201, date: '2026-11-03', details: 'Daily Entry', type: 'dr', amount: 5000 }] }],
-            denadar: [{ id: 1, name: 'রহিম ট্রেডার্স', transactions: [{ id: 301, date: '2026-11-02', details: 'Baki', type: 'dr', amount: 3000 }] }],
-            sim: [{ id: 1, name: 'Personal SIM 1', amount: 15000 }],
-            cash: [{ id: 1, name: 'দোকান ক্যাশ', amount: 8000 }],
-            bank: [{ id: 1, name: 'ব্র্যাক ব্যাংক', amount: 45000 }],
-            baki: [
-                { id: 1, name: 'করিম স্টোর', mobile: '01711000000', address: 'চৌমুহনী বাজার', transactions: [
-                    { id: 401, date: '2026-11-03', details: 'প্যারাসিটামল বক্স', type: 'dr', amount: 500 },
-                    { id: 402, date: '2026-11-04', details: 'নগদ জমা', type: 'cr', amount: 200 }
-                ]}
-            ],
+            allowedEmails: [],
+            capital: [],
+            transaction: [],
+            denadar: [],
+            sim: [],
+            cash: [],
+            bank: [],
+            baki: [],
             mcTransactions: [],
             shortList: [],
             bkashExpense: [],
-            bkashProfitReports: [] // stores the calculated profit dates to avoid double entry
+            bkashProfitReports: []
         };
+
+        // --- GOOGLE SHEETS SYNC (LOAD & SAVE) --- //
+        async function loadDataFromSheet() {
+            showLoader("ডেটাবেস থেকে তথ্য আনা হচ্ছে...");
+            try {
+                let res = await fetch(API_URL);
+                let result = await res.json();
+                if(result.status === 'success' && result.data) {
+                    appData = { ...appData, ...result.data };
+                }
+            } catch(e) {
+                console.error("Load Error:", e);
+                showToast("ডেটা লোড করতে সমস্যা হয়েছে! ইন্টারনেট চেক করুন।");
+            }
+            hideLoader();
+            updateUI();
+            renderMcLedger();
+            renderShortList();
+            renderBkashExpenseLedger();
+        }
+
+        let syncTimer;
+        async function syncDataToSheet() {
+            clearTimeout(syncTimer);
+            syncTimer = setTimeout(async () => {
+                let t = document.getElementById("toast");
+                t.innerText = "Cloud Syncing..."; t.className = "show";
+                try {
+                    let res = await fetch(API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: "save", data: appData })
+                    });
+                    let result = await res.json();
+                    if(result.status === 'success') {
+                        t.innerText = "সিঙ্ক সম্পন্ন হয়েছে!";
+                    } else {
+                        t.innerText = "সিঙ্ক ফেইল!";
+                    }
+                } catch(e) {
+                    console.error("Sync Error:", e);
+                    t.innerText = "ইন্টারনেট এরর, সিঙ্ক হয়নি!";
+                }
+                setTimeout(() => t.className = "", 2000);
+            }, 1000);
+        }
+
 
         // --- LOGIN & ACCESS CONTROL --- //
         const ADMIN_EMAIL = 'jesmulhasan69@gmail.com'; 
@@ -861,6 +922,7 @@
                 showToast("অ্যাক্সেস দেওয়া হয়েছে!");
                 document.getElementById('newAllowedEmail').value = '';
                 renderAllowedEmails();
+                syncDataToSheet(); // Sync
             } else {
                 showToast("এই ইমেইলটি আগে থেকেই আছে বা এটি অ্যাডমিন মেইল!");
             }
@@ -871,6 +933,7 @@
                 appData.allowedEmails = appData.allowedEmails.filter(e => e !== email);
                 renderAllowedEmails();
                 showToast("অ্যাক্সেস বাতিল করা হয়েছে!");
+                syncDataToSheet(); // Sync
             }
         }
 
@@ -927,11 +990,13 @@
             document.getElementById('beAmount').value = ''; document.getElementById('beNote').value = '';
             showToast("উত্তোলন পোস্টিং সম্পন্ন হয়েছে!");
             renderBkashExpenseLedger(); updateUI();
+            syncDataToSheet(); // Sync
         }
         function deleteBkashExpense(id) {
             if(confirm("মুছে ফেলতে চান?")) {
                 appData.bkashExpense = appData.bkashExpense.filter(t => t.id !== id);
                 renderBkashExpenseLedger(); updateUI(); showToast("মুছে ফেলা হয়েছে!");
+                syncDataToSheet(); // Sync
             }
         }
         function renderBkashExpenseLedger() {
@@ -960,12 +1025,14 @@
             appData.mcTransactions.push({ id: Date.now(), date, type, amount: Number(amount), note });
             document.getElementById('mcAmount').value = ''; document.getElementById('mcNote').value = '';
             showToast("পোস্টিং সম্পন্ন হয়েছে!"); renderMcLedger(); updateUI();
+            syncDataToSheet(); // Sync
         }
 
         function deleteMcTransaction(id) {
             if(confirm("মুছে ফেলতে চান?")) {
                 appData.mcTransactions = appData.mcTransactions.filter(t => t.id !== id);
                 renderMcLedger(); updateUI(); showToast("মুছে ফেলা হয়েছে!");
+                syncDataToSheet(); // Sync
             }
         }
 
@@ -997,8 +1064,9 @@
             appData.shortList.push({ id: Date.now(), date, name, qty, price });
             document.getElementById('medName').value = ''; document.getElementById('medQty').value = ''; document.getElementById('medPrice').value = '';
             renderShortList();
+            syncDataToSheet(); // Sync
         }
-        function deleteShortList(id) { appData.shortList = appData.shortList.filter(i => i.id !== id); renderShortList(); }
+        function deleteShortList(id) { appData.shortList = appData.shortList.filter(i => i.id !== id); renderShortList(); syncDataToSheet(); }
         function renderShortList() {
             let filterDate = document.getElementById('shortListDate').value;
             document.getElementById('displayShortListDate').innerText = filterDate;
@@ -1086,6 +1154,7 @@
             generateBkashReport();
             renderBkashExpenseLedger();
             updateUI();
+            syncDataToSheet(); // Sync
         }
 
         function generateBkashReport() {
@@ -1160,6 +1229,7 @@
             appData.baki.push({ id: Date.now(), name, mobile, address, transactions: [] });
             document.getElementById('newCustomerName').value = ''; document.getElementById('newCustomerMobile').value = ''; document.getElementById('newCustomerAddress').value = '';
             closeNewCustomerModal(); showToast("নতুন কাস্টমার যুক্ত হয়েছে!"); updateUI();
+            syncDataToSheet(); // Sync
         }
 
         function openBakiLedger(id) {
@@ -1192,6 +1262,7 @@
             document.getElementById('bakiEditId').value = ''; document.getElementById('bakiDetails').value = ''; document.getElementById('bakiAmount').value = '';
             document.getElementById('bakiFormTitle').innerHTML = '<i class="fas fa-plus-circle mr-2 text-indigo-400"></i>নতুন লেনদেন';
             renderBakiTable(customer);
+            syncDataToSheet(); // Sync
         }
 
         function editBakiTransaction(tId) {
@@ -1208,6 +1279,7 @@
                 let customer = appData.baki.find(c => c.id === currentBakiCustomerId);
                 customer.transactions = customer.transactions.filter(t => t.id !== tId);
                 renderBakiTable(customer); showToast("মুছে ফেলা হয়েছে!");
+                syncDataToSheet(); // Sync
             }
         }
 
@@ -1247,7 +1319,7 @@
                 if(searchTerm && !searchString.includes(searchTerm)) return;
                 let colorClass = bal >= 0 ? 'text-pink-400' : 'text-emerald-400'; let statusText = bal >= 0 ? '(পাবো)' : '(দিবো)';
                 if(bal === 0) { colorClass = 'text-slate-400'; statusText = ''; }
-                bakiListEl.innerHTML += `<div class="bg-slate-800 p-5 rounded-2xl shadow-lg border border-slate-700 flex justify-between items-center cursor-pointer hover:border-indigo-500 transition" onclick="openBakiLedger(${c.id})"><div><div class="font-bold text-white text-lg">${c.name} <span class="text-xs text-slate-500 font-normal ml-2">${c.mobile || ''}</span></div><div class="text-xs text-slate-400 mt-1"><i class="fas fa-map-marker-alt mr-1"></i>${c.address || ''}</div></div><div class="flex gap-4 items-center"><div class="text-xl font-bold ${colorClass}">৳${Math.abs(bal).toLocaleString()} <span class="text-xs font-normal">${statusText}</span></div><button onclick="event.stopPropagation(); if(confirm('কাস্টমারটি মুছতে চান?')){ appData.baki = appData.baki.filter(x=>x.id!==${c.id}); updateUI(); }" class="text-slate-500 hover:text-red-500 p-2"><i class="fas fa-trash"></i></button></div></div>`;
+                bakiListEl.innerHTML += `<div class="bg-slate-800 p-5 rounded-2xl shadow-lg border border-slate-700 flex justify-between items-center cursor-pointer hover:border-indigo-500 transition" onclick="openBakiLedger(${c.id})"><div><div class="font-bold text-white text-lg">${c.name} <span class="text-xs text-slate-500 font-normal ml-2">${c.mobile || ''}</span></div><div class="text-xs text-slate-400 mt-1"><i class="fas fa-map-marker-alt mr-1"></i>${c.address || ''}</div></div><div class="flex gap-4 items-center"><div class="text-xl font-bold ${colorClass}">৳${Math.abs(bal).toLocaleString()} <span class="text-xs font-normal">${statusText}</span></div><button onclick="event.stopPropagation(); if(confirm('কাস্টমারটি মুছতে চান?')){ appData.baki = appData.baki.filter(x=>x.id!==${c.id}); syncDataToSheet(); updateUI(); }" class="text-slate-500 hover:text-red-500 p-2"><i class="fas fa-trash"></i></button></div></div>`;
             });
             document.getElementById('bakiTotalPabo').innerText = totalPabo.toLocaleString(); document.getElementById('bakiTotalDibo').innerText = totalDibo.toLocaleString();
             if(bakiListEl.innerHTML === '') { bakiListEl.innerHTML = `<div class="text-center py-10 text-slate-500 border border-dashed border-slate-700 rounded-2xl">কোনো কাস্টমার পাওয়া যায়নি</div>`; }
@@ -1263,9 +1335,10 @@
             if(['sim','cash','bank'].includes(type)) { newItem.amount = amount; }
             else { newItem.transactions = []; if(amount > 0) newItem.transactions.push({ id: Date.now(), date: new Date().toISOString().split('T')[0], details: 'Opening', type: 'dr', amount: amount }); }
             appData[type].push(newItem); showToast("খাত যুক্ত হয়েছে!"); updateUI();
+            syncDataToSheet(); // Sync
         }
-        function deleteKhat(type, id) { if(confirm("মুছে ফেলতে চান?")) { appData[type] = appData[type].filter(i => i.id !== id); updateUI(); } }
-        function updateSimpleAmount(type, id, val) { let idx = appData[type].findIndex(i => i.id === id); if(idx !== -1) { appData[type][idx].amount = Number(val); updateUI(); } }
+        function deleteKhat(type, id) { if(confirm("মুছে ফেলতে চান?")) { appData[type] = appData[type].filter(i => i.id !== id); updateUI(); syncDataToSheet(); } }
+        function updateSimpleAmount(type, id, val) { let idx = appData[type].findIndex(i => i.id === id); if(idx !== -1) { appData[type][idx].amount = Number(val); updateUI(); syncDataToSheet(); } }
 
         // --- BKASH LEDGER --- //
         function openLedger(type, id) {
@@ -1284,6 +1357,7 @@
             let item = appData[type].find(i => i.id === id);
             item.transactions.push({ id: Date.now(), date, details, type: trType, amount: Number(amount) });
             renderLedgerTable(item); showToast("যুক্ত হয়েছে!");
+            syncDataToSheet(); // Sync
         }
         function renderLedgerTable(item) {
             let tbody = document.getElementById('ledgerTableBody'), bal = 0; tbody.innerHTML = '';
@@ -1356,19 +1430,25 @@
         }
         
         window.onload = () => {
-            // Check Auto Login
             let loggedInEmail = localStorage.getItem('ms_logged_in_email');
-            if(loggedInEmail && (loggedInEmail === ADMIN_EMAIL || appData.allowedEmails.includes(loggedInEmail))) {
-                let overlay = document.getElementById('loginOverlay');
-                if(overlay) overlay.classList.add('hidden');
-                updateAdminUI(loggedInEmail);
+            if(loggedInEmail) {
+                document.getElementById('loginOverlay').classList.add('hidden');
             }
 
-            updateUI();
-            renderMcLedger();
-            renderShortList();
-            renderBkashExpenseLedger();
+            // Load remote data first
+            loadDataFromSheet().then(() => {
+                // verify access with updated allowed emails
+                if (loggedInEmail && (loggedInEmail === ADMIN_EMAIL || appData.allowedEmails.includes(loggedInEmail))) {
+                    updateAdminUI(loggedInEmail);
+                } else if (loggedInEmail) {
+                    localStorage.removeItem('ms_logged_in_email');
+                    document.getElementById('loginOverlay').classList.remove('hidden');
+                    document.getElementById('loginErrorMsg').classList.remove('hidden');
+                    document.getElementById('loginErrorMsg').innerText = "অ্যাডমিন আপনার অ্যাক্সেস বাতিল করেছেন!";
+                }
+            });
         };
     </script>
 </body>
 </html>
+```eof
