@@ -54,7 +54,8 @@
     </div>
 
     <!-- Login Overlay -->
-    <div id="loginOverlay" class="fixed inset-0 bg-slate-950 z-[200] flex items-center justify-center transition-opacity duration-300 hidden">
+    <!-- Removed 'hidden' class from here so it shows by default -->
+    <div id="loginOverlay" class="fixed inset-0 bg-slate-950 z-[200] flex items-center justify-center transition-opacity duration-300">
         <div class="bg-slate-900 p-8 rounded-2xl shadow-2xl border border-slate-800 text-center max-w-md w-full mx-4 relative overflow-hidden">
             <!-- Background Decoration -->
             <div class="absolute -top-10 -left-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
@@ -1431,8 +1432,11 @@
         
         window.onload = () => {
             let loggedInEmail = localStorage.getItem('ms_logged_in_email');
+            
             if(loggedInEmail) {
                 document.getElementById('loginOverlay').classList.add('hidden');
+            } else {
+                document.getElementById('loginOverlay').classList.remove('hidden');
             }
 
             // Load remote data first
@@ -1451,4 +1455,3 @@
     </script>
 </body>
 </html>
-```eof
