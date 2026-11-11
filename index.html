@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>মঈজুদ্দীন শাহ মেডিসিন এন্ড টেলিকম</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Google Identity Services (For Gmail Login) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Hind Siliguri', sans-serif; background-color: #0f172a; color: #e2e8f0; } 
+        
+        .menu-pad { transition: all 0.3s ease; }
+        .menu-pad:hover { background-color: #4f46e5; color: white; transform: translateX(5px); }
+        
+        .view-section { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        input, select, textarea { background-color: #1e293b; color: #f8fafc; border-color: #334155; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.5); }
+        
+        #toast { visibility: hidden; min-width: 250px; background-color: #10b981; color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; font-size: 17px; transform: translateX(-50%); box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        #toast.show { visibility: visible; animation: fadeinToast 0.5s, fadeoutToast 0.5s 2.5s; }
+        @keyframes fadeinToast { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+        @keyframes fadeoutToast { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #printPad, #printPad * { visibility: visible; }
+            #printPad { position: absolute; left: 0; top: 0; width: 100%; color: black; background: white; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden relative">
+
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="fixed inset-0 bg-slate-900/95 backdrop-blur-sm z-[99990] flex flex-col items-center justify-center hidden">
+        <div class="bg-slate-800 p-8 rounded-3xl shadow-2xl border border-slate-700 text-center max-w-sm w-full mx-4 relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl"></div>
+            <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-pink-500/20 rounded-full blur-2xl"></div>
+            
+            <div class="relative z-10">
+                <div class="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg border-4 border-slate-800">
+                    <i class="fas fa-lock text-3xl text-white"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-1">সিস্টেম লগ-ইন</h2>
+                <p class="text-slate-400 text-sm mb-8 font-medium">মঈজুদ্দীন শাহ মেডিসিন এন্ড টেলিকম</p>
+                
+                <div class="bg-slate-900/50 p-6 rounded-2xl border border-slate-700 mb-2 flex justify-center">
+                    <!-- Google Sign-In Button Container -->
+                    <div id="g_id_onload"
+                         data-client_id="1079786436640-qbcu3bb8qp5s02354991m60iqpmi7sso.apps.googleusercontent.com.apps.googleusercontent.com" 
+                         data-context="signin"
+                         data-ux_mode="popup"
+                         data-callback="handleCredentialResponse"
+                         data-auto_prompt="false">
+                    </div>
+                    
+                    <div class="g_id_signin"
+                         data-type="standard"
+                         data-shape="rectangular"
+                         data-theme="outline"
+                         data-text="signin_with"
+                         data-size="large"
+                         data-logo_alignment="left">
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mt-4"><i class="fas fa-info-circle mr-1"></i>শুধুমাত্র অনুমোদিত অ্যাডমিনরা প্রবেশ করতে পারবেন</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sync Status Indicator -->
+    <div id="syncStatus" class="fixed top-20 md:top-4 right-4 z-[200] bg-slate-800 text-xs px-3 py-1.5 rounded-full border border-slate-600 shadow-lg text-slate-300 flex items-center gap-2 transition-all">
+        <div class="w-2 h-2 rounded-full bg-slate-500" id="syncDot"></div> 
+        <span id="syncText">Connecting...</span>
+    </div>
+
+    <!-- Sidebar / 3-Dot Menu -->
+    <div id="sidebar" class="bg-slate-900 border-r border-slate-800 w-64 flex-shrink-0 flex flex-col transition-all duration-300 absolute md:relative z-50 h-full -translate-x-full md:translate-x-0 shadow-2xl">
+        <div class="p-5 bg-slate-950 flex justify-between items-center border-b border-slate-800">
+            <div>
+                <h1 class="text-lg font-bold text-indigo-400">মঈজুদ্দীন শাহ</h1>
+                <p class="text-xs text-slate-400">মেডিসিন এন্ড টেলিকম</p>
+            </div>
+            <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 space-y-2">
+            
+            <a href="#" onclick="switchView('dashboardView')" class="menu-pad block px-4 py-3 rounded-xl bg-slate-800/50 text-sm font-medium mb-2 border border-slate-700 hover:border-indigo-500"><i class="fas fa-chart-pie mr-3 text-emerald-400"></i>ড্যাশবোর্ড</a>
+
+            <div class="mb-2">
+                <button onclick="toggleDropdown('bkashMenu')" class="menu-pad w-full text-left px-4 py-3 rounded-xl bg-slate-800/50 text-sm font-medium flex justify-between items-center border border-slate-700 hover:border-indigo-500">
+                    <span><i class="fas fa-wallet mr-3 text-pink-500"></i>bKash Business</span>
+                    <i class="fas fa-chevron-down text-xs"></i>
+                </button>
+                <div id="bkashMenu" class="hidden pl-4 pr-2 py-2 space-y-2 bg-slate-900/50 rounded-b-xl mt-1 border-l-2 border-indigo-500 ml-2">
+                    <a href="#" onclick="switchView('bkashCapitalView')" class="menu-pad block px-4 py-2 rounded-lg bg-slate-800/80 text-xs text-slate-300 hover:text-white"><i class="fas fa-coins mr-2 text-yellow-400"></i>বিকাশ মূলধন (Ledger)</a>
+                    <a href="#" onclick="switchView('bkashSimView')" class="menu-pad block px-4 py-2 rounded-lg bg-slate-800/80 text-xs text-slate-300 hover:text-white"><i class="fas fa-sim-card mr-2 text-indigo-400"></i>সিমের তথ্য</a>
+                    <a href="#" onclick="switchView('bkashTransactionView')" class="menu-pad block px-4 py-2 rounded-lg bg-slate-800/80 text-xs text-slate-300 hover:text-white"><i class="fas fa-exchange-alt mr-2 text-blue-400"></i>bKash Transaction (Ledger)</a>
+                    <a href="#" onclick="switchView('bkashARView')" class="menu-pad block px-4 py-2 rounded-lg bg-slate-800/80 text-xs text-slate-300 hover:text-white"><i class="fas fa-hand-holding-usd mr-2 text-emerald-400"></i>A/R-দেনাদার (Ledger)</a>
+                    <a href="#" onclick="switchView('bkashCashView')" class="menu-pad block px-4 py-2 rounded-lg bg-slate-800/80 text-xs text-slate-300 hover:text-white"><i class="fas fa-money-bill-wave mr-2 text-teal-400"></i>ক্যাশ (Cash)</a>
+                    <a href="#" onclick="switchView('bkashBankView')" class="menu-pad block px-4 py-2 rounded-lg bg-slate-800/80 text-xs text-slate-300 hover:text-white"><i class="fas fa-university mr-2 text-orange-400"></i>ব্যাংক (Bank)</a>
+                    <a href="#" onclick="switchView('bkashExpenseView')" class="menu-pad block px-4 py-2 rounded-lg bg-slate-800/80 text-xs text-slate-300 hover:text-white"><i class="fas fa-minus-circle mr-2 text-red-400"></i>উত্তোলন / Expense</a>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <button onclick="toggleDropdown('medicineMenu')" class="menu-pad w-full text-left px-4 py-3 rounded-xl bg-slate-800/50 text-sm font-medium flex justify-between items-center border border-slate-700 hover:border-indigo-500">
+                    <span><i class="fas fa-pills mr-3 text-blue-400"></i>Medicine Business</span>
+                    <i class="fas fa-chevron-down text-xs"></i>
+                </button>
+                <div id="medicineMenu" class="hidden pl-4 pr-2 py-2 space-y-2 bg-slate-900/50 rounded-b-xl mt-1 border-l-2 border-indigo-500 ml-2">
+                    <a href="#" onclick="switchView('medicineCashBookView')" class="menu-pad block px-4 py-2 rounded-lg bg-slate-800/80 text-xs text-slate-300 hover:text-white"><i class="fas fa-cash-register mr-2 text-teal-400"></i>ক্যাশ বুক (Ledger)</a>
+                    <a href="#" onclick="switchView('medicineShortListView')" class="menu-pad block px-4 py-2 rounded-lg bg-slate-800/80 text-xs text-slate-300 hover:text-white"><i class="fas fa-list-ol mr-2 text-orange-400"></i>শর্ট লিস্ট প্যাড</a>
+                </div>
+            </div>
+
+            <a href="#" onclick="switchView('bakiKhataView')" class="menu-pad block px-4 py-3 rounded-xl bg-slate-800/50 text-sm font-medium mb-2 border border-slate-700 hover:border-indigo-500"><i class="fas fa-book-open mr-3 text-orange-500"></i>Tally Khata (বাকি খাতা)</a>
+            
+            <a href="#" onclick="switchView('reportView')" class="menu-pad block px-4 py-3 rounded-xl bg-slate-800/50 text-sm font-medium border border-slate-700 hover:border-indigo-500"><i class="fas fa-file-invoice mr-3 text-yellow-400"></i>রিপোর্ট (Report)</a>
+            
+            <a href="#" onclick="switchView('settingsView')" class="menu-pad block px-4 py-3 rounded-xl bg-slate-800/50 text-sm font-medium border border-slate-700 hover:border-indigo-500 mt-4"><i class="fas fa-cog mr-3 text-slate-400"></i>সেটিংস (Settings)</a>
+            
+            <a href="#" onclick="processLogout()" class="menu-pad block px-4 py-3 rounded-xl bg-red-900/40 text-sm font-medium border border-red-800/50 hover:border-red-500 mt-4 text-red-300"><i class="fas fa-sign-out-alt mr-3"></i>লগ-আউট (Logout)</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col w-full h-full relative bg-slate-900">
+        
+        <div class="bg-slate-950 border-b border-slate-800 px-6 py-4 flex items-center justify-between z-10 shadow-md">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-indigo-400">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+                <div>
+                    <h2 class="text-xl font-bold text-white">মঈজুদ্দীন শাহ <span class="text-indigo-500">মেডিসিন এন্ড টেলিকম</span></h2>
+                    <p class="text-xs text-slate-400">01816533969, 01690070909 | <i class="fas fa-map-marker-alt mr-1 text-pink-500"></i>পূর্ব গুমানমর্দ্দন, চৌমুহনী বাজার, চট্টগ্রাম</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-6 pb-20" id="mainContainer">
+            
+            <!-- BAKI KHATA VIEW -->
+            <div id="bakiKhataView" class="view-section">
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 border-b border-slate-700 pb-3">
+                    <h2 class="text-2xl font-bold text-white"><i class="fas fa-book-open text-orange-500 mr-2"></i> Tally Khata</h2>
+                    
+                    <div class="flex gap-2 max-w-2xl w-full relative overflow-x-auto">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="bakiCustomerSearch" placeholder="নাম বা নাম্বার..." 
+                               class="w-full pl-10 pr-2 py-2 border border-slate-600 rounded-lg text-sm bg-slate-900 text-white focus:border-indigo-500 transition-all"
+                               onkeyup="updateBakiCustomerList()">
+                        <input type="number" id="bakiAmountSearch" placeholder="বকেয়া (৳)" 
+                               class="w-32 border border-slate-600 p-2 rounded-lg text-sm bg-slate-900 text-white focus:border-indigo-500"
+                               oninput="updateBakiCustomerList()">
+                        <input type="date" id="bakiDateSearch" 
+                               class="w-40 border border-slate-600 p-2 rounded-lg text-sm bg-slate-900 text-white focus:border-indigo-500"
+                               onchange="updateBakiCustomerList()">
+                    </div>
+
+                    <button onclick="openNewCustomerModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg text-sm transition shrink-0"><i class="fas fa-user-plus mr-1"></i> নতুন কাস্টমার</button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-slate-800 rounded-xl p-4 shadow-lg border border-slate-700 text-center">
+                        <p class="text-slate-400 text-xs font-bold mb-2">মোট বকেয়া (Receivable)</p>
+                        <h4 class="text-2xl font-bold text-emerald-400">৳ <span id="bakiTotalPabo">0</span></h4>
+                    </div>
+                    <div class="bg-slate-800 rounded-xl p-4 shadow-lg border border-slate-700 text-center">
+                        <p class="text-slate-400 text-xs font-bold mb-2" id="diboTextLabel">মোট দিবো (Payable)</p>
+                        <h4 class="text-2xl font-bold text-pink-400"><span id="bakiTotalDibo">0</span></h4>
+                    </div>
+                </div>
+
+                <div id="bakiCustomerList" class="space-y-4"></div>
+            </div>
+
+            <!-- REPORT VIEW -->
+            <div id="reportView" class="view-section">
+                <h2 class="text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3"><i class="fas fa-file-invoice mr-2 text-yellow-400"></i>রিপোর্ট (Report)</h2>
+                
+                <div class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                        <h3 class="text-lg font-bold text-orange-400"><i class="fas fa-book-open mr-2"></i>বাকি খাতার মাসিক রিপোর্ট</h3>
+                        <div class="flex gap-3 w-full md:w-auto">
+                            <input type="number" id="reportBakiMinDue" placeholder="সর্বনিম্ন বকেয়া (৳)" class="border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white w-full md:w-48 focus:border-indigo-500" oninput="generateReports()">
+                            <input type="month" id="reportBakiMonth" class="border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white w-full md:w-auto" onchange="generateReports()">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-slate-900 rounded-xl p-4 shadow-lg border border-slate-700 text-center">
+                            <p class="text-slate-400 text-xs font-bold mb-2">এই মাসে মোট দিলাম (Dr)</p>
+                            <h4 class="text-xl font-bold text-pink-400">৳ <span id="reportBakiPabo">0</span></h4>
+                        </div>
+                        <div class="bg-slate-900 rounded-xl p-4 shadow-lg border border-slate-700 text-center">
+                            <p class="text-slate-400 text-xs font-bold mb-2">এই মাসে মোট পেলাম (Cr)</p>
+                            <h4 class="text-xl font-bold text-emerald-400">৳ <span id="reportBakiDibo">0</span></h4>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-slate-300">
+                            <thead class="text-xs text-slate-400 uppercase bg-slate-900 rounded-lg">
+                                <tr>
+                                    <th class="px-4 py-3 rounded-tl-lg">কাস্টমারের নাম</th>
+                                    <th class="px-4 py-3">মোবাইল নাম্বার</th>
+                                    <th class="px-4 py-3 text-right">এই মাসে দিলাম</th>
+                                    <th class="px-4 py-3 text-right">এই মাসে পেলাম</th>
+                                    <th class="px-4 py-3 text-right rounded-tr-lg">মোট বকেয়া</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportBakiTableBody" class="divide-y divide-slate-700/50"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 mb-6 relative overflow-hidden">
+                    <div class="absolute -right-10 -top-10 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl"></div>
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 relative z-10">
+                        <h3 class="text-lg font-bold text-blue-400"><i class="fas fa-pills mr-2"></i>মেডিসিন বিজনেসের মাসিক রিপোর্ট</h3>
+                        <input type="month" id="reportMedMonth" class="border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white w-full md:w-auto" onchange="generateReports()">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
+                        <div class="bg-slate-900 rounded-xl p-4 shadow-lg border border-slate-700 text-center">
+                            <p class="text-slate-400 text-xs font-bold mb-2">মাসিক বিক্রি (Sale)</p>
+                            <h4 class="text-lg font-bold text-emerald-400">৳ <span id="reportMedSale">0</span></h4>
+                        </div>
+                        <div class="bg-slate-900 rounded-xl p-4 shadow-lg border border-slate-700 text-center">
+                            <p class="text-slate-400 text-xs font-bold mb-2">মাসিক ক্রয় (Purchase)</p>
+                            <h4 class="text-lg font-bold text-pink-400">৳ <span id="reportMedPurchase">0</span></h4>
+                        </div>
+                        <div class="bg-slate-900 rounded-xl p-4 shadow-lg border border-slate-700 text-center">
+                            <p class="text-slate-400 text-xs font-bold mb-2">অন্যান্য খরচ (Expense)</p>
+                            <h4 class="text-lg font-bold text-orange-400">৳ <span id="reportMedExpense">0</span></h4>
+                        </div>
+                        <div class="bg-slate-900 rounded-xl p-4 shadow-lg border border-slate-700 text-center">
+                            <p class="text-slate-400 text-xs font-bold mb-2">উদ্বৃত্ত (Surplus)</p>
+                            <h4 class="text-lg font-bold text-slate-200">৳ <span id="reportMedSurplus">0</span></h4>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 bg-gradient-to-r from-slate-900 to-indigo-900/50 rounded-xl p-5 border border-indigo-500/30 relative z-10">
+                        <h4 class="text-sm font-bold text-indigo-300 mb-3 border-b border-indigo-500/30 pb-2"><i class="fas fa-chart-line mr-2"></i>Net Profit Analysis (10% Margin)</h4>
+                        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div class="text-center md:text-left">
+                                <p class="text-xs text-slate-400">Gross Profit (Sale x 10%)</p>
+                                <p class="text-lg font-bold text-emerald-400">৳ <span id="reportGrossProfit">0</span></p>
+                            </div>
+                            <div class="hidden md:block text-slate-600"><i class="fas fa-minus"></i></div>
+                            <div class="text-center md:text-left">
+                                <p class="text-xs text-slate-400">Monthly Expense</p>
+                                <p class="text-lg font-bold text-orange-400">৳ <span id="reportExpenseDeduction">0</span></p>
+                            </div>
+                            <div class="hidden md:block text-slate-600"><i class="fas fa-equals"></i></div>
+                            <div class="text-center md:text-right bg-indigo-600/20 p-3 rounded-lg border border-indigo-500/30">
+                                <p class="text-xs font-bold text-indigo-300 uppercase tracking-wider">Net Profit</p>
+                                <h4 class="text-2xl font-bold text-white">৳ <span id="reportNetProfit">0</span></h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 relative overflow-hidden">
+                    <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-pink-500/10 rounded-full blur-2xl"></div>
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 relative z-10">
+                        <h3 class="text-lg font-bold text-pink-400"><i class="fas fa-wallet mr-2"></i>বিকাশ বিজনেসের মাসিক রিপোর্ট</h3>
+                        <div class="flex gap-2">
+                             <input type="month" id="reportBkashMonth" class="border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white w-full md:w-auto" onchange="generateBkashReport()">
+                             <button onclick="openProfitModal()" class="bg-pink-600 hover:bg-pink-500 text-white font-bold py-2 px-4 rounded-lg text-sm transition"><i class="fas fa-calculator mr-2"></i>প্রফিট হিসাব ও এডজাস্ট</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto relative z-10">
+                        <table class="w-full text-left text-sm text-slate-300">
+                            <thead class="text-xs text-slate-400 uppercase bg-slate-900 rounded-lg">
+                                <tr>
+                                    <th class="px-4 py-3 rounded-tl-lg">তারিখ</th>
+                                    <th class="px-4 py-3">বিবরণ / এডজাস্ট খাত</th>
+                                    <th class="px-4 py-3 text-right">উত্তোলন (Withdraw/Dr)</th>
+                                    <th class="px-4 py-3 text-right">প্রফিট (Cr)</th>
+                                    <th class="px-4 py-3 text-right rounded-tr-lg">অ্যাকশন</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportBkashTableBody" class="divide-y divide-slate-700/50"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- DASHBOARD VIEW -->
+            <div id="dashboardView" class="view-section active">
+                <h2 class="text-2xl font-bold text-white mb-6 flex items-center"><i class="fas fa-chart-pie mr-3 text-indigo-500"></i> ড্যাশবোর্ড ওভারভিউ</h2>
+                
+                <div onclick="switchView('medicineShortListView')" class="cursor-pointer bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 shadow-xl mb-6 flex justify-between items-center transform hover:scale-[1.02] transition-transform">
+                    <div>
+                        <p class="text-blue-100 text-sm font-semibold mb-1 uppercase">শর্ট লিস্ট প্যাড (Short List)</p>
+                        <h3 class="text-3xl font-bold text-white">আজকের ঔষধ: <span id="dashShortListCount">0</span> টি</h3>
+                    </div>
+                    <div class="p-4 bg-black/20 rounded-2xl text-white"><i class="fas fa-list-ol text-3xl"></i></div>
+                </div>
+
+                <div onclick="switchView('bakiKhataView')" class="cursor-pointer bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-6 shadow-xl mb-6 flex justify-between items-center transform hover:scale-[1.02] transition-transform">
+                    <div>
+                        <p class="text-orange-100 text-sm font-semibold mb-1 uppercase">Tally Khata (বাকি খাতা)</p>
+                        <h3 class="text-3xl font-bold text-white">মোট বকেয়া: ৳ <span id="dashTallyPabo">0</span></h3>
+                    </div>
+                    <div class="p-4 bg-black/20 rounded-2xl text-white"><i class="fas fa-book text-3xl"></i></div>
+                </div>
+
+                <div class="mb-8">
+                    <h3 class="text-lg font-bold text-pink-400 mb-4 border-b border-slate-700 pb-2"><i class="fas fa-wallet mr-2"></i>bKash Business</h3>
+                    
+                    <div onclick="switchView('bkashCapitalView')" class="cursor-pointer bg-gradient-to-r from-purple-600 to-indigo-700 rounded-2xl p-6 shadow-xl mb-4 relative overflow-hidden transform hover:scale-[1.02] transition-transform">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
+                        <div class="flex justify-between items-center relative z-10">
+                            <div>
+                                <p class="text-purple-200 text-sm font-semibold mb-1 tracking-wider uppercase">মোট বিকাশ মূলধন (Total Capital)</p>
+                                <h3 class="text-4xl font-bold text-white">৳ <span id="dashTotalCapital">0</span></h3>
+                            </div>
+                            <div class="p-4 bg-black/20 rounded-2xl text-purple-200"><i class="fas fa-coins text-3xl"></i></div>
+                        </div>
+                    </div>
+                    
+                    <div onclick="switchView('bkashExpenseView')" class="cursor-pointer bg-gradient-to-r from-pink-600 to-rose-600 rounded-2xl p-6 shadow-xl mb-6 relative overflow-hidden transform hover:scale-[1.02] transition-transform">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
+                        <div class="flex justify-between items-center relative z-10">
+                            <div>
+                                <p class="text-pink-200 text-sm font-semibold mb-1 tracking-wider uppercase">Total Outstanding</p>
+                                <h3 class="text-4xl font-bold text-white">৳ <span id="dashTotalOutstanding">0</span></h3>
+                                <p class="text-xs text-pink-200 mt-1 opacity-80">(সিম + লেনদেন + দেনাদার + ক্যাশ + ব্যাংক + উত্তোলন)</p>
+                            </div>
+                            <div class="p-4 bg-black/20 rounded-2xl text-pink-200"><i class="fas fa-chart-line text-3xl"></i></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div onclick="switchView('bkashSimView')" class="cursor-pointer bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl p-4 shadow-lg text-center transform hover:scale-[1.05] transition-transform">
+                            <p class="text-indigo-100 text-xs font-bold mb-2">সিম ব্যালেন্স</p>
+                            <h4 class="text-lg font-bold text-white">৳ <span id="dashSim">0</span></h4>
+                        </div>
+                        <div onclick="switchView('bkashTransactionView')" class="cursor-pointer bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl p-4 shadow-lg text-center transform hover:scale-[1.05] transition-transform">
+                            <p class="text-cyan-100 text-xs font-bold mb-2">বিকাশ লেনদেন</p>
+                            <h4 class="text-lg font-bold text-white">৳ <span id="dashTransaction">0</span></h4>
+                        </div>
+                        <div onclick="switchView('bkashARView')" class="cursor-pointer bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl p-4 shadow-lg text-center transform hover:scale-[1.05] transition-transform">
+                            <p class="text-emerald-100 text-xs font-bold mb-2">মোট দেনাদার</p>
+                            <h4 class="text-lg font-bold text-white">৳ <span id="dashDenadar">0</span></h4>
+                        </div>
+                        <div onclick="switchView('bkashCashView')" class="cursor-pointer bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-xl p-4 shadow-lg text-center transform hover:scale-[1.05] transition-transform">
+                            <p class="text-violet-100 text-xs font-bold mb-2">ক্যাশ ও ব্যাংক</p>
+                            <h4 class="text-lg font-bold text-white">৳ <span id="dashCashBank">0</span></h4>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-emerald-600 to-teal-800 rounded-2xl p-6 shadow-2xl border border-emerald-500/30 relative overflow-hidden">
+                        <div class="absolute -bottom-10 -right-10 text-white/10"><i class="fas fa-chart-line text-9xl"></i></div>
+                        <div class="flex justify-between items-center relative z-10">
+                            <div>
+                                <p class="text-emerald-100 text-sm font-semibold mb-1 uppercase tracking-wider">bKash Profit / Loss</p>
+                                <h3 class="text-4xl font-bold text-white">৳ <span id="dashProfit">0</span></h3>
+                                <p class="text-xs text-emerald-200 mt-2 opacity-75">সূত্র: Total Outstanding - Total Capital</p>
+                            </div>
+                            <div class="p-4 bg-black/20 rounded-2xl backdrop-blur-sm border border-white/10"><i class="fas fa-arrow-trend-up text-3xl text-emerald-300"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-bold text-blue-400 mb-4 border-b border-slate-700 pb-2"><i class="fas fa-pills mr-2"></i>Medicine Business (Today)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div onclick="switchView('medicineCashBookView')" class="cursor-pointer bg-gradient-to-br from-sky-500 to-blue-600 rounded-xl p-6 shadow-lg text-center transform hover:scale-[1.02] transition-transform">
+                            <p class="text-sky-100 text-sm font-bold mb-2 uppercase">Total MC Balance</p>
+                            <h4 class="text-2xl font-bold text-white">৳ <span id="dashMedTotalBalance">0</span></h4>
+                        </div>
+                        <div onclick="switchView('bakiKhataView')" class="cursor-pointer bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-6 shadow-lg text-center transform hover:scale-[1.02] transition-transform">
+                            <p class="text-amber-100 text-sm font-bold mb-2 uppercase">Today MC Baki</p>
+                            <h4 class="text-2xl font-bold text-white">৳ <span id="dashMedTodayBaki">0</span></h4>
+                        </div>
+                        <div onclick="switchView('medicineCashBookView')" class="cursor-pointer bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl p-6 shadow-lg text-center transform hover:scale-[1.02] transition-transform">
+                            <p class="text-emerald-100 text-sm font-bold mb-2 uppercase">Today MC Profit</p>
+                            <h4 class="text-2xl font-bold text-white">৳ <span id="dashMedTodayProfit">0</span></h4>
+                            <p class="text-xs text-emerald-100 mt-1 opacity-80">(Sale x 10%) - Expense</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- bKash Expense / Uttolon View -->
+            <div id="bkashExpenseView" class="view-section">
+                <h2 class="text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3"><i class="fas fa-minus-circle mr-2 text-red-400"></i> উত্তোলন / Expense (bKash)</h2>
+                
+                <div class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 mb-6">
+                    <h3 class="text-lg font-bold text-pink-400 mb-4 border-b border-slate-700 pb-2" id="beFormTitle"><i class="fas fa-plus-circle mr-2"></i>নতুন এন্ট্রি / পোস্টিং</h3>
+                    <input type="hidden" id="beEditId"> 
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                        <input type="date" id="beDate" class="border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white">
+                        <input type="text" id="beNote" placeholder="বিবরণ / নোট লিখুন..." class="border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white md:col-span-2">
+                        <input type="number" id="beAmount" placeholder="পরিমাণ (৳)" class="border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white">
+                    </div>
+                    <button id="beSubmitBtn" onclick="addBkashExpenseTransaction()" class="w-full bg-pink-600 hover:bg-pink-500 text-white font-bold py-3 rounded-lg transition">পোস্টিং দিন</button>
+                </div>
+
+                <div class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-bold text-slate-300 text-lg">Expense লেজার</h4>
+                        <input type="month" id="beFilterMonth" onchange="renderBkashExpenseLedger()" class="border border-slate-600 p-2 rounded bg-slate-900 text-white text-sm">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-slate-300">
+                            <thead class="text-xs text-slate-400 uppercase bg-slate-900 rounded-lg">
+                                <tr>
+                                    <th class="px-4 py-3 rounded-tl-lg">তারিখ</th>
+                                    <th class="px-4 py-3">বিবরণ / নোট</th>
+                                    <th class="px-4 py-3 text-right">খরচ (Amount)</th>
+                                    <th class="px-4 py-3 text-center rounded-tr-lg">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="beTableBody" class="divide-y divide-slate-700/50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MEDICINE CASH BOOK VIEW -->
+            <div id="medicineCashBookView" class="view-section">
+                <h2 class="text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3"><i class="fas fa-cash-register mr-2 text-teal-400"></i> মেডিসিন ক্যাশ বুক (Ledger)</h2>
+                
+                <div class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 mb-6">
+                    <h3 class="text-lg font-bold text-indigo-400 mb-4 border-b border-slate-700 pb-2"><i class="fas fa-plus-circle mr-2"></i>নতুন এন্ট্রি / পোস্টিং</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+                        <input type="date" id="mcDate" class="border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white">
+                        <input type="text" id="mcNote" placeholder="বিবরণ / নোট লিখুন..." class="border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white md:col-span-2">
+                        <select id="mcType" class="border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white focus:border-indigo-500">
+                            <option value="MC SALE">MC SALE (বিক্রি/জমা)</option>
+                            <option value="MC PURCHASE">MC PURCHASE (ক্রয়/খরচ)</option>
+                            <option value="EXPENSE">EXPENSE (অন্যান্য খরচ)</option>
+                        </select>
+                        <input type="number" id="mcAmount" placeholder="পরিমাণ (৳)" class="border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white">
+                    </div>
+                    <button onclick="addMcTransaction()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg transition">পোস্টিং দিন</button>
+                </div>
+
+                <div class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-bold text-slate-300 text-lg">ক্যাশ বুক লেজার</h4>
+                        <input type="month" id="mcFilterMonth" onchange="renderMcLedger()" class="border border-slate-600 p-2 rounded bg-slate-900 text-white text-sm">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-slate-300">
+                            <thead class="text-xs text-slate-400 uppercase bg-slate-900 rounded-lg">
+                                <tr>
+                                    <th class="px-4 py-3 rounded-tl-lg">তারিখ</th>
+                                    <th class="px-4 py-3">বিবরণ / নোট</th>
+                                    <th class="px-4 py-3 text-right">জমা (Dr)</th>
+                                    <th class="px-4 py-3 text-right">খরচ (Cr)</th>
+                                    <th class="px-4 py-3 text-right">ব্যালেন্স</th>
+                                    <th class="px-4 py-3 text-center rounded-tr-lg">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mcTableBody" class="divide-y divide-slate-700/50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MEDICINE SHORT LIST VIEW -->
+            <div id="medicineShortListView" class="view-section">
+                <h2 class="text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3 flex justify-between items-end">
+                    <span><i class="fas fa-list-ol mr-2 text-orange-400"></i> শর্ট লিস্ট প্যাড</span>
+                </h2>
+
+                <div class="max-w-2xl mx-auto">
+                    <!-- Pad Controls -->
+                    <div class="bg-slate-800 p-4 rounded-t-2xl border border-b-0 border-slate-700 no-print flex flex-col md:flex-row gap-3 justify-between items-center">
+                        <div class="flex gap-2 w-full md:w-auto">
+                            <input type="date" id="shortListDate" onchange="renderShortList()" class="border border-slate-600 p-2 rounded-lg text-sm bg-slate-900 text-white">
+                        </div>
+                        <div class="flex gap-2 w-full md:w-auto">
+                            <button onclick="shareShortList()" class="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition"><i class="fas fa-share-square mr-2"></i>Send Copy</button>
+                            <button onclick="window.print()" class="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition"><i class="fas fa-print mr-2"></i>Print</button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-800 p-4 border border-slate-700 border-t-0 border-b-0 no-print flex gap-2">
+                        <input type="text" id="medName" placeholder="ঔষধের বিবরণ" class="flex-1 border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white focus:border-indigo-500">
+                        <input type="number" id="medQty" placeholder="পরিমাণ" class="w-20 border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white focus:border-indigo-500">
+                        <input type="number" id="medPrice" placeholder="Price (Optional)" class="w-28 border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white focus:border-indigo-500">
+                        <button onclick="addShortList()" class="bg-orange-500 text-white px-4 rounded-lg font-bold mobile-fab md:static md:bottom-auto md:right-auto md:shadow-none"><i class="fas fa-plus"></i></button>
+                    </div>
+
+                    <!-- Printable Pad Area -->
+                    <div class="bg-white p-6 md:p-10 rounded-b-2xl shadow-2xl border-t-4 border-indigo-600" id="printPad">
+                        <div class="text-center mb-6 border-b-2 border-slate-300 pb-4 text-slate-800">
+                            <h2 class="text-2xl font-bold text-indigo-700">মঈজুদ্দীন শাহ মেডিসিন</h2>
+                            <p class="text-sm font-medium mt-1">পূর্ব গুমানমর্দ্দন, চৌমুহনী বাজার, চট্টগ্রাম</p>
+                            <p class="text-sm font-bold mt-1"><i class="fas fa-phone-alt mr-1"></i> 01816533969, 01690070909</p>
+                        </div>
+                        
+                        <div class="flex justify-between items-center mb-4 text-slate-800">
+                            <h3 class="text-lg font-bold underline decoration-indigo-300 decoration-2 underline-offset-4">শর্ট লিস্ট ভাউচার</h3>
+                            <p class="text-sm font-bold bg-slate-100 px-3 py-1 rounded">তারিখ: <span id="displayShortListDate"></span></p>
+                        </div>
+
+                        <div class="text-slate-800 font-semibold mb-2 flex justify-between px-2 text-sm border-b border-slate-800 pb-1">
+                            <span>বিবরণ - পরিমাণ</span>
+                            <span>মূল্য (৳)</span>
+                        </div>
+                        
+                        <ul id="shortListUl" class="space-y-3 text-slate-700 mt-3"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SIM Info View -->
+            <div id="bkashSimView" class="view-section">
+                <h2 class="text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3"><i class="fas fa-sim-card text-indigo-400 mr-2"></i> সিমের তথ্য</h2>
+                <div id="simList" class="space-y-4"></div>
+            </div>
+
+            <!-- Settings -->
+            <div id="settingsView" class="view-section">
+                <h2 class="text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3"><i class="fas fa-cog mr-2 text-slate-400"></i>সেটিংস ম্যানেজার</h2>
+                
+                <div class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 mb-6">
+                    <h3 class="text-lg font-bold text-indigo-400 mb-4">নতুন খাত (Category) যুক্ত করুন</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">কোন অপশনে যুক্ত করবেন?</label>
+                            <select id="settingCategoryType" class="w-full border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white focus:border-indigo-500">
+                                <option value="capital">বিকাশ মূলধন (Ledger)</option>
+                                <option value="sim">সিমের তথ্য (Simple Update)</option>
+                                <option value="transaction">বিকাশ লেনদেন (Ledger)</option>
+                                <option value="denadar">A/R-দেনাদার (Ledger)</option>
+                                <option value="cash">ক্যাশ (Simple Update)</option>
+                                <option value="bank">ব্যাংক (Simple Update)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">খাতের নাম</label>
+                            <input type="text" id="settingKhatName" placeholder="যেমন: ব্যাংক লোন, কাস্টমার নাম..." class="w-full border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">প্রাথমিক ব্যালেন্স (৳)</label>
+                            <input type="number" id="settingInitialBalance" placeholder="0" class="w-full border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white">
+                        </div>
+                    </div>
+                    <button onclick="addDynamicKhat()" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-500 transition"><i class="fas fa-plus mr-2"></i>খাত যুক্ত করুন</button>
+                </div>
+
+                <!-- Admin Add Section -->
+                <div class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700">
+                    <h3 class="text-lg font-bold text-emerald-400 mb-4"><i class="fas fa-users-cog mr-2"></i>অ্যাডমিন ম্যানেজমেন্ট</h3>
+                    <div class="flex gap-3 mb-4">
+                        <input type="email" id="newAdminEmail" placeholder="অ্যাডমিনের ইমেইল আইডি দিন..." class="flex-1 border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white focus:border-emerald-500">
+                        <button onclick="addNewAdmin()" class="bg-emerald-600 text-white font-bold py-2.5 px-6 rounded-lg hover:bg-emerald-500 transition">অ্যাড করুন</button>
+                    </div>
+                    <div id="adminList" class="space-y-2 mt-4"></div>
+                </div>
+            </div>
+
+            <!-- LEDGER VIEWS -->
+            <div id="bkashCapitalView" class="view-section">
+                <h2 class="text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3 flex justify-between items-end">
+                    <span><i class="fas fa-coins text-yellow-400 mr-2"></i> বিকাশ মূলধন</span>
+                    <span class="text-sm font-normal text-slate-400">Total: ৳<span id="headerTotalCapital" class="text-white font-bold">0</span></span>
+                </h2>
+                <div id="capitalList" class="space-y-4"></div>
+            </div>
+
+            <div id="bkashARView" class="view-section">
+                <h2 class="text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3 flex justify-between items-end">
+                    <span><i class="fas fa-hand-holding-usd text-emerald-400 mr-2"></i> A/R-দেনাদার</span>
+                    <span class="text-sm font-normal text-slate-400">Total: ৳<span id="headerTotalDenadar" class="text-white font-bold">0</span></span>
+                </h2>
+                <div id="denadarList" class="space-y-4"></div>
+            </div>
+
+            <div id="bkashTransactionView" class="view-section">
+                <h2 class="text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3 flex justify-between items-end">
+                    <span><i class="fas fa-exchange-alt text-blue-400 mr-2"></i> bKash Transaction</span>
+                    <span class="text-sm font-normal text-slate-400">Total: ৳<span id="headerTotalTransaction" class="text-white font-bold">0</span></span>
+                </h2>
+                <div id="transactionList" class="space-y-4"></div>
+            </div>
+
+            <!-- SIMPLE VIEWS -->
+            <div id="bkashCashView" class="view-section">
+                <h2 class="text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3 flex justify-between items-end">
+                    <span><i class="fas fa-money-bill-wave text-teal-400 mr-2"></i> ক্যাশ</span>
+                    <span class="text-sm font-normal text-slate-400">Total: ৳<span id="headerTotalCash" class="text-white font-bold">0</span></span>
+                </h2>
+                <div id="cashList" class="space-y-4"></div>
+            </div>
+
+            <div id="bkashBankView" class="view-section">
+                <h2 class="text-2xl font-bold text-white mb-6 border-b border-slate-700 pb-3 flex justify-between items-end">
+                    <span><i class="fas fa-university text-orange-400 mr-2"></i> ব্যাংক</span>
+                    <span class="text-sm font-normal text-slate-400">Total: ৳<span id="headerTotalBank" class="text-white font-bold">0</span></span>
+                </h2>
+                <div id="bankList" class="space-y-4"></div>
+            </div>
+
+            <!-- GENERAL LEDGER MODAL -->
+            <div id="ledgerModal" class="hidden fixed inset-0 bg-slate-900/95 z-[100] flex flex-col p-4 md:p-10 backdrop-blur-sm overflow-y-auto">
+                <div class="max-w-4xl w-full mx-auto bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 flex flex-col">
+                    <div class="p-6 border-b border-slate-700 flex justify-between items-start bg-slate-800/80 rounded-t-2xl">
+                        <div>
+                            <h2 class="text-3xl font-bold text-white" id="ledgerTitle">খাতের নাম</h2>
+                            <p class="text-sm text-slate-400 mt-2">বর্তমান ব্যালেন্স: <span class="text-xl font-bold text-emerald-400 ml-1">৳ <span id="ledgerCurrentBalance">0</span></span></p>
+                        </div>
+                        <button onclick="closeLedger()" class="bg-slate-700 hover:bg-slate-600 text-white rounded-full w-10 h-10 flex items-center justify-center transition"><i class="fas fa-times"></i></button>
+                    </div>
+
+                    <div class="p-6 bg-slate-850 border-b border-slate-700">
+                        <div class="flex flex-wrap md:flex-nowrap gap-3">
+                            <input type="hidden" id="genLedgerEditId">
+                            <input type="date" id="ledgerDate" class="border border-slate-600 p-2.5 rounded-lg text-sm text-white w-full md:w-auto">
+                            <input type="text" id="ledgerDetails" placeholder="বিবরণ..." class="flex-1 border border-slate-600 p-2.5 rounded-lg text-sm text-white">
+                            <select id="ledgerType" class="border border-slate-600 p-2.5 rounded-lg text-sm text-white w-full md:w-32">
+                                <option value="dr">যোগ (+)</option>
+                                <option value="cr">বিয়োগ (-)</option>
+                            </select>
+                            <input type="number" id="ledgerAmount" placeholder="পরিমাণ" class="w-full md:w-32 border border-slate-600 p-2.5 rounded-lg text-sm text-white">
+                            <button onclick="addLedgerTransaction()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-6 rounded-lg transition" id="genLedgerSaveBtn">Save</button>
+                        </div>
+                    </div>
+
+                    <div class="p-6 overflow-x-auto">
+                        <table class="w-full text-left text-sm text-slate-300">
+                            <thead class="text-xs text-slate-400 uppercase bg-slate-900 rounded-lg">
+                                <tr>
+                                    <th class="px-4 py-3">তারিখ</th>
+                                    <th class="px-4 py-3">বিবরণ</th>
+                                    <th class="px-4 py-3 text-right">Dr (+)</th>
+                                    <th class="px-4 py-3 text-right">Cr (-)</th>
+                                    <th class="px-4 py-3 text-right">ব্যালেন্স</th>
+                                    <th class="px-4 py-3 text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ledgerTableBody" class="divide-y divide-slate-700/50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BAKI KHATA LEDGER MODAL -->
+            <div id="bakiLedgerModal" class="hidden fixed inset-0 bg-slate-900/95 z-[100] flex flex-col p-4 md:p-10 backdrop-blur-sm overflow-y-auto">
+                <div class="max-w-4xl w-full mx-auto bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 flex flex-col">
+                    <div class="p-6 border-b border-slate-700 flex justify-between items-start bg-slate-800/80 rounded-t-2xl no-print">
+                        <div>
+                            <p class="text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">বাকি খাতা লেজার</p>
+                            <h2 class="text-3xl font-bold text-white" id="bakiLedgerTitle">কাস্টমারের নাম</h2>
+                            <p class="text-sm text-slate-400 mt-1"><i class="fas fa-phone mr-1"></i><span id="bakiLedgerPhone"></span> | <i class="fas fa-map-marker-alt mr-1"></i><span id="bakiLedgerAddress"></span></p>
+                            <p class="text-sm text-slate-400 mt-3">বর্তমান ব্যালেন্স: <span class="text-xl font-bold ml-1" id="bakiLedgerCurrentBalance">৳ 0</span></p>
+                        </div>
+                        
+                        <div class="flex items-center gap-3">
+                            <button onclick="downloadBakiLedgerPDF()" class="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 font-bold transition flex items-center"><i class="fas fa-file-pdf mr-2"></i>Send PDF</button>
+                            <button onclick="closeBakiLedger()" class="bg-slate-700 hover:bg-slate-600 text-white rounded-full w-10 h-10 flex items-center justify-center transition"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div id="printableBakiLedger" class="bg-slate-800 rounded-b-2xl">
+                        <div class="hidden print-header bg-white p-6 border-b-2 border-indigo-600 text-slate-800">
+                            <div class="text-center mb-4">
+                                <h2 class="text-2xl font-bold text-indigo-700">মঈজুদ্দীন শাহ মেডিসিন</h2>
+                                <p class="text-sm font-medium mt-1">পূর্ব গুমানমর্দ্দন, চৌমুহনী বাজার, চট্টগ্রাম</p>
+                                <p class="text-sm font-bold mt-1"><i class="fas fa-phone-alt mr-1"></i> 01816533969, 01690070909</p>
+                            </div>
+                            <div class="flex justify-between border-t border-slate-300 pt-4">
+                                <div>
+                                    <p class="font-bold">নাম: <span id="pdfCustomerName" class="font-normal"></span></p>
+                                    <p class="font-bold">মোবাইল: <span id="pdfCustomerPhone" class="font-normal"></span></p>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-right">ঠিকানা: <span id="pdfCustomerAddress" class="font-normal"></span></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-6 bg-slate-850 border-b border-slate-700 no-print">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-bold text-slate-300" id="bakiFormTitle"><i class="fas fa-plus-circle mr-2 text-indigo-400"></i>নতুন লেনদেন</h4>
+                                <div class="flex items-center gap-2">
+                                    <input type="checkbox" id="bakiSmsCheckbox" class="w-4 h-4 text-indigo-600 bg-slate-700 border-slate-500 rounded">
+                                    <label for="bakiSmsCheckbox" class="text-sm text-slate-400 cursor-pointer">SMS পাঠান (চার্জ প্রযোজ্য)</label>
+                                </div>
+                            </div>
+                            
+                            <input type="hidden" id="bakiEditId" value="">
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                                <input type="date" id="bakiDate" class="border border-slate-600 p-2.5 rounded-lg text-sm text-white w-full">
+                                <input type="text" id="bakiDetails" placeholder="বিবরণ (যেমন: ঔষধ ক্রয়)" class="border border-slate-600 p-2.5 rounded-lg text-sm text-white w-full md:col-span-2">
+                                <input type="number" id="bakiAmount" placeholder="টাকার পরিমাণ (৳)" class="border border-slate-600 p-2.5 rounded-lg text-sm text-white w-full">
+                            </div>
+                            <div class="flex gap-3">
+                                <button onclick="saveBakiTransaction('dr')" class="flex-1 bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-lg transition"><i class="fas fa-arrow-up mr-2"></i>দিলাম (Dr/পাবো)</button>
+                                <button onclick="saveBakiTransaction('cr')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition"><i class="fas fa-arrow-down mr-2"></i>পেলাম (Cr/দিবো)</button>
+                            </div>
+                        </div>
+
+                        <div class="p-6 overflow-x-auto pdf-table-wrapper">
+                            <table class="w-full text-left text-sm text-slate-300 pdf-table">
+                                <thead class="text-xs text-slate-400 uppercase bg-slate-900 rounded-lg pdf-thead">
+                                    <tr>
+                                        <th class="px-4 py-3 rounded-tl-lg">তারিখ</th>
+                                        <th class="px-4 py-3">বিবরণ</th>
+                                        <th class="px-4 py-3 text-right">দিলাম (Dr)</th>
+                                        <th class="px-4 py-3 text-right">পেলাম (Cr)</th>
+                                        <th class="px-4 py-3 text-right">ব্যালেন্স</th>
+                                        <th class="px-4 py-3 text-center rounded-tr-lg no-print">অ্যাকশন</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bakiLedgerTableBody" class="divide-y divide-slate-700/50 pdf-tbody"></tbody>
+                            </table>
+                            <div class="hidden print-footer text-right p-4 text-slate-800 font-bold text-lg mt-4 bg-slate-100 rounded-b-lg">
+                                মোট বকেয়া: <span id="pdfTotalDue"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW CUSTOMER MODAL -->
+            <div id="newCustomerModal" class="hidden fixed inset-0 bg-slate-900/95 z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
+                <div class="bg-slate-800 p-6 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-md">
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
+                        <h3 class="text-xl font-bold text-white"><i class="fas fa-user-plus mr-2 text-indigo-400"></i>নতুন কাস্টমার</h3>
+                        <button onclick="closeNewCustomerModal()" class="text-slate-400 hover:text-white"><i class="fas fa-times text-lg"></i></button>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">কাস্টমারের নাম</label>
+                            <input type="text" id="newCustomerName" class="w-full border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">মোবাইল নাম্বার</label>
+                            <input type="text" id="newCustomerMobile" class="w-full border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-1">ঠিকানা / বাড়ির নাম</label>
+                            <input type="text" id="newCustomerAddress" class="w-full border border-slate-600 p-2.5 rounded-lg text-sm bg-slate-900 text-white">
+                        </div>
+                        <button onclick="addNewBakiCustomer()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-lg mt-2 transition">কাস্টমার সেভ করুন</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROFIT ADJUST MODAL -->
+            <div id="profitModal" class="hidden fixed inset-0 bg-slate-900/95 z-[120] flex items-center justify-center p-4 backdrop-blur-sm">
+                <div class="bg-slate-800 p-6 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-md">
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
+                        <h3 class="text-xl font-bold text-white"><i class="fas fa-calculator mr-2 text-indigo-400"></i>প্রফিট এডজাস্টমেন্ট</h3>
+                        <button onclick="closeProfitModal()" class="text-slate-400 hover:text-white"><i class="fas fa-times text-lg"></i></button>
+                    </div>
+                    <div class="text-center mb-6">
+                        <p class="text-slate-400 text-sm mb-1">বর্তমানে হিসাবযোগ্য প্রফিট</p>
+                        <h2 class="text-4xl font-bold text-emerald-400">৳ <span id="displayProfitAmount">0</span></h2>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-2">কোন খাতে প্রফিট এডজাস্ট করবেন?</label>
+                            <select id="profitAdjustSelect" class="w-full border border-slate-600 p-3 rounded-lg text-sm bg-slate-900 text-white focus:border-indigo-500">
+                                <!-- Options injected via JS -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 mb-2">টাকার পরিমাণ (৳)</label>
+                            <input type="number" id="profitAdjustAmount" class="w-full border border-slate-600 p-3 rounded-lg text-sm bg-slate-900 text-white focus:border-indigo-500" placeholder="0">
+                        </div>
+                        <button onclick="saveProfitAdjustment()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg mt-2 transition">এডজাস্ট করুন</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="bg-slate-950 border-t border-slate-800 py-3 px-6 text-center text-xs text-slate-500 z-10 w-full shadow-inner no-print">
+            <p>&copy; 2026 মঈজুদ্দীন শাহ মেডিসিন এন্ড টেলিকম</p>
+        </div>
+    </div>
+
+    <div id="toast">Message goes here</div>
+
+    <script>
+        // Google Apps Script Web App URL টি এখানে দিন
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby6CjmkL66MD5VWwPoAbDpAsOqqM8yS6zk5bP8XMvQKyYKK-_DGSjKsuGKFc_4VDSdNCA/exec';
+        
+        let lastSavedDataString = null;
+        let isSyncing = false;
+
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .pdf-mode { background: white !important; color: black !important; }
+            .pdf-mode .print-header, .pdf-mode .print-footer { display: block !important; }
+            .pdf-mode .no-print { display: none !important; }
+            .pdf-mode .pdf-table-wrapper { background: white !important; color: black !important; border: 1px solid #ccc; padding: 10px;}
+            .pdf-mode .pdf-table th { background-color: #f1f5f9 !important; color: #334155 !important; border-bottom: 2px solid #cbd5e1; }
+            .pdf-mode .pdf-table td { color: #0f172a !important; border-bottom: 1px solid #e2e8f0; }
+        `;
+        document.head.appendChild(style);
+
+        let today = new Date().toISOString().split('T')[0];
+
+        let appData = {
+            admins: ['jesmulhasan69@gmail.com'],
+            capital: [{ id: 1, name: 'নিজস্ব ফান্ড', transactions: [{ id: 101, date: '2026-11-01', details: 'Opening Balance', type: 'dr', amount: 50000 }] }],
+            transaction: [{ id: 1, name: 'Today Trans', transactions: [] }],
+            denadar: [{ id: 1, name: 'রহিম ট্রেডার্স', transactions: [] }],
+            expense: [{ id: 1, name: 'উত্তোলন খাতা', transactions: [] }],
+            sim: [{ id: 1, name: 'Personal SIM 1', amount: 15000, isEditing: false }],
+            cash: [{ id: 1, name: 'দোকান ক্যাশ', amount: 8000, isEditing: false }],
+            bank: [{ id: 1, name: 'ব্র্যাক ব্যাংক', amount: 45000, isEditing: false }],
+            baki: [{ id: 1, name: 'করিম স্টোর', mobile: '01711000000', address: 'বাজার', transactions: [] }],
+            mcTransactions: [],
+            shortList: [],
+            bkashExpense: [],
+            bkashProfitReports: [] 
+        };
+
+        // --- GOOGLE OAUTH LOGIN SYSTEM ---
+        function decodeJwtResponse(token) {
+            let base64Url = token.split('.')[1];
+            let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            let jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        function handleCredentialResponse(response) {
+            const responsePayload = decodeJwtResponse(response.credential);
+            const userEmail = responsePayload.email;
+            
+            if(appData.admins.includes(userEmail)) {
+                localStorage.setItem('loggedInAdmin', userEmail);
+                document.getElementById('loginOverlay').classList.add('hidden');
+                showToast("লগ-ইন সফল হয়েছে!");
+            } else {
+                showToast("দুঃখিত! এই ইমেইলের অ্যাডমিন অ্যাক্সেস নেই।");
+            }
+        }
+        
+        function checkLoginStatus() {
+            const loggedInUser = localStorage.getItem('loggedInAdmin');
+            if (loggedInUser && appData.admins.includes(loggedInUser)) {
+                document.getElementById('loginOverlay').classList.add('hidden');
+            } else {
+                document.getElementById('loginOverlay').classList.remove('hidden');
+            }
+        }
+
+        function processLogout() {
+            localStorage.removeItem('loggedInAdmin');
+            document.getElementById('loginOverlay').classList.remove('hidden');
+            if(window.innerWidth < 768) toggleSidebar();
+            showToast("আপনি লগ-আউট হয়েছেন!");
+        }
+
+        // --- LOCAL-FIRST CACHE TECHNOLOGY (0-SECOND LOAD) ---
+        
+        async function loadInitialData() {
+            
+            // 1. INSTANT UI LOAD FROM CACHE
+            let cached = localStorage.getItem('cachedAppData');
+            if (cached) {
+                try {
+                    let parsedCache = JSON.parse(cached);
+                    if (parsedCache && parsedCache.admins) {
+                        appData = parsedCache;
+                        lastSavedDataString = JSON.stringify(appData);
+                    }
+                } catch(e) {}
+            }
+
+            // Set default dates instantly
+            document.getElementById('shortListDate').value = today;
+            document.getElementById('mcDate').value = today;
+            document.getElementById('beDate').value = today;
+            document.getElementById('reportBakiMonth').value = today.slice(0, 7);
+            document.getElementById('reportMedMonth').value = today.slice(0, 7);
+            document.getElementById('reportBkashMonth').value = today.slice(0, 7);
+            document.getElementById('mcFilterMonth').value = today.slice(0, 7);
+            document.getElementById('beFilterMonth').value = today.slice(0, 7);
+
+            // Hide loader and Check Login Instantly
+            document.getElementById('initialLoader').style.display = 'none';
+            checkLoginStatus();
+            
+            // Render UI
+            updateUI();
+            if(document.getElementById('mcTableBody')) renderMcLedger(); 
+            if(document.getElementById('shortListUl')) renderShortList(); 
+            if(document.getElementById('beTableBody')) renderBkashExpenseLedger();
+            generateBkashReport();
+
+            // 2. BACKGROUND SERVER SYNC
+            try {
+                updateSyncUI('syncing');
+                let res = await fetch(WEB_APP_URL);
+                let json = await res.json();
+                
+                if (json && Object.keys(json).length > 0 && json.admins) {
+                    appData = json;
+                    // Update Cache
+                    localStorage.setItem('cachedAppData', JSON.stringify(appData));
+                }
+                
+                lastSavedDataString = JSON.stringify(appData); 
+                updateSyncUI('connected');
+
+                // Update UI one more time if there are any new changes from server
+                checkLoginStatus();
+                updateUI();
+                if(document.getElementById('mcTableBody')) renderMcLedger(); 
+                if(document.getElementById('shortListUl')) renderShortList(); 
+                if(document.getElementById('beTableBody')) renderBkashExpenseLedger();
+                generateBkashReport();
+                
+            } catch (err) {
+                console.error("Background Loading Error: ", err);
+                updateSyncUI('error');
+            }
+        }
+
+        setInterval(() => {
+            let currentDataString = JSON.stringify(appData);
+            if (lastSavedDataString !== currentDataString && lastSavedDataString !== null && !isSyncing) {
+                isSyncing = true;
+                updateSyncUI('syncing');
+                
+                fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ data: appData })
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if(res.status === 'success') {
+                        lastSavedDataString = currentDataString;
+                        localStorage.setItem('cachedAppData', currentDataString); // Update Cache on every save
+                        updateSyncUI('connected');
+                    } else {
+                        updateSyncUI('error');
+                    }
+                    isSyncing = false;
+                })
+                .catch(err => {
+                    console.log("Sync Error: ", err);
+                    updateSyncUI('error');
+                    isSyncing = false;
+                });
+            }
+        }, 3000);
+
+        function updateSyncUI(status) {
+            let dot = document.getElementById('syncDot');
+            let text = document.getElementById('syncText');
+            if(status === 'syncing') {
+                dot.className = "w-2 h-2 rounded-full bg-yellow-500 animate-pulse";
+                text.innerText = "Syncing...";
+            } else if (status === 'connected') {
+                dot.className = "w-2 h-2 rounded-full bg-emerald-500";
+                text.innerText = "Saved";
+            } else {
+                dot.className = "w-2 h-2 rounded-full bg-red-500";
+                text.innerText = "Offline";
+            }
+        }
+
+        let currentLedgerView = { type: null, id: null };
+        let currentBakiCustomerId = null;
+
+        function getLedgerBal(item) {
+            if(!item.transactions) return 0;
+            return item.transactions.reduce((t, tr) => tr.type === 'dr' ? t + Number(tr.amount) : t - Number(tr.amount), 0);
+        }
+        function getCatTotal(cat) {
+            return appData[cat].reduce((s, i) => s + (['sim','cash','bank'].includes(cat) ? Number(i.amount||0) : getLedgerBal(i)), 0);
+        }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+        function toggleDropdown(id) { document.getElementById(id).classList.toggle('hidden'); }
+        function switchView(vid) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(vid).classList.add('active');
+            if(window.innerWidth < 768) toggleSidebar();
+            if(vid === 'reportView') generateReports();
+            updateUI();
+        }
+        function showToast(msg) {
+            let t = document.getElementById("toast"); t.innerText = msg; t.className = "show";
+            setTimeout(() => t.className = "", 3000);
+        }
+
+        // --- ADMIN SETTINGS ---
+        function addNewAdmin() {
+            let email = document.getElementById('newAdminEmail').value;
+            if(!email) return showToast("ইমেইল দিন!");
+            if(!appData.admins.includes(email)) {
+                appData.admins.push(email);
+                showToast("অ্যাডমিন যুক্ত হয়েছে!");
+            } else {
+                showToast("এই ইমেইল ইতিমধ্যে অ্যাডমিন হিসেবে আছে!");
+            }
+            document.getElementById('newAdminEmail').value = '';
+            updateUI();
+        }
+        function deleteAdmin(email) {
+            if(appData.admins.length === 1) return showToast("কমপক্ষে একজন অ্যাডমিন থাকতে হবে!");
+            if(confirm("অ্যাডমিন রিমুভ করবেন?")) {
+                appData.admins = appData.admins.filter(e => e !== email);
+                updateUI();
+                
+                // If they deleted themselves, log them out
+                if (localStorage.getItem('loggedInAdmin') === email) {
+                    processLogout();
+                } else {
+                    showToast("রিমুভ করা হয়েছে!");
+                }
+            }
+        }
+
+        // --- SIM, CASH, BANK EDIT ---
+        function toggleSimpleEdit(type, id) {
+            let s = appData[type].find(x => x.id === id); s.isEditing = !s.isEditing; updateUI();
+        }
+        function saveSimpleAmt(type, id, val) {
+            let s = appData[type].find(x => x.id === id); s.amount = Number(val); s.isEditing = false; updateUI();
+        }
+
+        // MEDICINE CASH BOOK
+        function addMcTransaction() {
+            let d = document.getElementById('mcDate').value, t = document.getElementById('mcType').value,
+                a = document.getElementById('mcAmount').value, n = document.getElementById('mcNote').value;
+            if(!d || !a) return showToast("তারিখ এবং পরিমাণ দিন!");
+            appData.mcTransactions.push({ id: Date.now(), date: d, type: t, amount: Number(a), note: n });
+            document.getElementById('mcAmount').value = ''; document.getElementById('mcNote').value = '';
+            renderMcLedger(); updateUI(); showToast("সেভ হয়েছে!");
+        }
+        function deleteMcTransaction(id) {
+            if(confirm("ডিলিট করবেন?")) { appData.mcTransactions = appData.mcTransactions.filter(t => t.id !== id); renderMcLedger(); updateUI(); }
+        }
+        function renderMcLedger() {
+            let f = document.getElementById('mcFilterMonth').value, tb = document.getElementById('mcTableBody'), b = 0; tb.innerHTML = '';
+            let s = [...appData.mcTransactions].sort((x,y) => new Date(x.date) - new Date(y.date));
+            s.forEach(t => {
+                let isDr = t.type === 'MC SALE'; b += isDr ? t.amount : -t.amount;
+                if(f && !t.date.startsWith(f)) return;
+                tb.innerHTML += `<tr><td class="px-4 py-3">${t.date}</td><td><span class="font-bold block">${t.type}</span><span class="text-xs text-slate-500">${t.note||''}</span></td>
+                <td class="text-right text-emerald-400">${isDr?'+'+t.amount:'-'}</td><td class="text-right text-pink-400">${!isDr?'-'+t.amount:'-'}</td>
+                <td class="text-right font-bold text-white">৳${b}</td><td class="text-center"><button onclick="deleteMcTransaction(${t.id})" class="text-slate-500 hover:text-red-500"><i class="fas fa-trash"></i></button></td></tr>`;
+            });
+        }
+
+        // SHORT LIST & SHARE
+        function addShortList() {
+            let d = document.getElementById('shortListDate').value, n = document.getElementById('medName').value, q = document.getElementById('medQty').value, p = document.getElementById('medPrice').value;
+            if(!n || !q) return showToast("নাম ও পরিমাণ দিন!");
+            appData.shortList.push({ id: Date.now(), date: d, name: n, qty: q, price: p });
+            document.getElementById('medName').value = ''; document.getElementById('medQty').value = ''; document.getElementById('medPrice').value = ''; renderShortList(); updateUI();
+        }
+        function renderShortList() {
+            let f = document.getElementById('shortListDate').value, ul = document.getElementById('shortListUl'); ul.innerHTML = '';
+            document.getElementById('displayShortListDate').innerText = f;
+            (f ? appData.shortList.filter(i=>i.date===f) : appData.shortList).forEach((i,idx) => {
+                let priceHtml = i.price ? `৳${i.price}` : '';
+                ul.innerHTML += `<li class="flex justify-between items-end border-b-2 border-dotted border-slate-300 pb-1">
+                    <span><span class="font-bold text-base">${idx+1}. ${i.name}</span> <span class="font-medium text-sm ml-2">- ${i.qty} pcs</span></span>
+                    <div class="flex items-center gap-3"><span class="font-bold text-base">${priceHtml}</span><button onclick="appData.shortList=appData.shortList.filter(x=>x.id!==${i.id});renderShortList();updateUI();" class="text-slate-400 hover:text-red-500 no-print"><i class="fas fa-times"></i></button></div>
+                </li>`;
+            });
+        }
+        async function shareShortList() {
+            let filterDate = document.getElementById('shortListDate').value;
+            let filtered = appData.shortList.filter(i => i.date === filterDate);
+            if(filtered.length === 0) return showToast("লিস্টে কিছু নেই!");
+            
+            let text = `মঈজুদ্দীন শাহ মেডিসিন\nপূর্ব গুমানমর্দ্দন, চৌমুহনী বাজার, চট্টগ্রাম\n01816533969, 01690070909\n\nশর্ট লিস্ট ভাউচার (তারিখ: ${filterDate})\n-------------------------\n`;
+            filtered.forEach((i, idx) => { let p = i.price ? ` | ৳${i.price}` : ''; text += `${idx+1}. ${i.name} - ${i.qty} pcs${p}\n`; });
+            text += `-------------------------`;
+            
+            if (navigator.share) {
+                try { await navigator.share({ title: 'শর্ট লিস্ট ভাউচার', text: text, }); showToast("লিস্ট শেয়ার করা হয়েছে!"); } 
+                catch (error) { console.log('Error sharing:', error); }
+            } else {
+                navigator.clipboard.writeText(text).then(() => { showToast("লিংক কপি করা হয়েছে (শেয়ার অপশন ব্রাউজারে সাপোর্টেড নয়)!"); });
+            }
+        }
+
+        // BAKI KHATA LEDGER
+        function openNewCustomerModal(){ document.getElementById('newCustomerModal').classList.remove('hidden'); }
+        function closeNewCustomerModal(){ document.getElementById('newCustomerModal').classList.add('hidden'); }
+        function addNewBakiCustomer(){
+            let n = document.getElementById('newCustomerName').value, m = document.getElementById('newCustomerMobile').value, a = document.getElementById('newCustomerAddress').value;
+            if(!n) return showToast("নাম দিন!");
+            appData.baki.push({id:Date.now(), name:n, mobile:m, address:a, transactions:[]});
+            closeNewCustomerModal(); updateUI(); showToast("কাস্টমার সেভড!");
+        }
+        function openBakiLedger(id){
+            currentBakiCustomerId = id; let c = appData.baki.find(x=>x.id===id);
+            document.getElementById('bakiLedgerTitle').innerText = c.name; document.getElementById('pdfCustomerName').innerText = c.name;
+            document.getElementById('bakiLedgerPhone').innerText = c.mobile || 'N/A'; document.getElementById('pdfCustomerPhone').innerText = c.mobile || 'N/A';
+            document.getElementById('bakiLedgerAddress').innerText = c.address || 'N/A'; document.getElementById('pdfCustomerAddress').innerText = c.address || 'N/A';
+            document.getElementById('bakiEditId').value = ''; document.getElementById('bakiDate').value = today; document.getElementById('bakiAmount').value = ''; document.getElementById('bakiDetails').value = '';
+            document.getElementById('bakiFormTitle').innerHTML = '<i class="fas fa-plus-circle mr-2 text-indigo-400"></i>নতুন লেনদেন';
+            renderBakiTable(c); document.getElementById('bakiLedgerModal').classList.remove('hidden');
+        }
+        function closeBakiLedger(){ document.getElementById('bakiLedgerModal').classList.add('hidden'); updateUI(); }
+        
+        function saveBakiTransaction(t){
+            let d = document.getElementById('bakiDate').value, det = document.getElementById('bakiDetails').value, a = document.getElementById('bakiAmount').value, e = document.getElementById('bakiEditId').value;
+            let smsChecked = document.getElementById('bakiSmsCheckbox').checked;
+            if(!d || !det || !a) return showToast("সব তথ্য দিন!");
+            let c = appData.baki.find(x=>x.id===currentBakiCustomerId);
+            
+            if(e) { c.transactions.find(x=>x.id==e).date=d; c.transactions.find(x=>x.id==e).details=det; c.transactions.find(x=>x.id==e).amount=Number(a); c.transactions.find(x=>x.id==e).type=t; showToast("এডিট করা হয়েছে!"); }
+            else { c.transactions.push({id:Date.now(), date:d, details:det, type:t, amount:Number(a)}); showToast("সেভ হয়েছে!"); }
+            
+            if(smsChecked && appData.sim.length > 0) { appData.sim[0].amount = (Number(appData.sim[0].amount) || 0) - 2; showToast("SMS পাঠানো হয়েছে (২৳ কাটা হয়েছে)!"); }
+            
+            document.getElementById('bakiEditId').value=''; document.getElementById('bakiDetails').value=''; document.getElementById('bakiAmount').value='';
+            document.getElementById('bakiFormTitle').innerHTML = '<i class="fas fa-plus-circle mr-2 text-indigo-400"></i>নতুন লেনদেন';
+            renderBakiTable(c);
+        }
+        function editBakiTransaction(id){
+            let c = appData.baki.find(x=>x.id===currentBakiCustomerId).transactions.find(x=>x.id==id);
+            document.getElementById('bakiEditId').value = id; document.getElementById('bakiDate').value = c.date;
+            document.getElementById('bakiDetails').value = c.details; document.getElementById('bakiAmount').value = c.amount;
+            document.getElementById('bakiFormTitle').innerHTML = '<i class="fas fa-edit mr-2 text-yellow-400"></i>লেনদেন এডিট করুন';
+        }
+        function deleteBakiTransaction(id){
+            if(confirm("ডিলিট?")) { appData.baki.find(x=>x.id===currentBakiCustomerId).transactions = appData.baki.find(x=>x.id===currentBakiCustomerId).transactions.filter(x=>x.id!==id); renderBakiTable(appData.baki.find(x=>x.id===currentBakiCustomerId)); showToast("মুছে ফেলা হয়েছে!"); }
+        }
+        function renderBakiTable(c) {
+            let tb = document.getElementById('bakiLedgerTableBody'), b=0; tb.innerHTML='';
+            c.transactions.forEach(t=>{
+                b += t.type==='dr'?t.amount:-t.amount;
+                tb.innerHTML += `<tr><td class="px-4 py-3">${t.date}</td><td class="px-4 py-3">${t.details}</td>
+                <td class="px-4 py-3 text-right text-pink-400">${t.type==='dr'?'+'+t.amount:'-'}</td><td class="px-4 py-3 text-right text-emerald-400">${t.type==='cr'?'-'+t.amount:'-'}</td>
+                <td class="px-4 py-3 text-right font-bold text-white pdf-black">৳${b}</td><td class="px-4 py-3 text-center no-print">
+                <button onclick="editBakiTransaction(${t.id})" class="text-blue-400 mr-2"><i class="fas fa-pen"></i></button><button onclick="deleteBakiTransaction(${t.id})" class="text-red-500"><i class="fas fa-trash"></i></button></td></tr>`;
+            });
+            let el = document.getElementById('bakiLedgerCurrentBalance');
+            el.innerText = '৳'+Math.abs(b); el.className = b>=0?"text-xl font-bold ml-1 text-pink-400":"text-xl font-bold ml-1 text-emerald-400"; el.innerText += b>=0?'(পাবো)':'(দিবো)';
+            document.getElementById('pdfTotalDue').innerText = `৳ ${Math.abs(b).toLocaleString()}`;
+        }
+        
+        function updateBakiCustomerList() {
+            let searchTerm = document.getElementById('bakiCustomerSearch').value.toLowerCase();
+            let amtFilter = Number(document.getElementById('bakiAmountSearch').value) || 0;
+            let dateFilter = document.getElementById('bakiDateSearch').value;
+            let bakiListEl = document.getElementById('bakiCustomerList');
+            if(!bakiListEl) return;
+            
+            let totalPabo = 0, totalDibo = 0; 
+            bakiListEl.innerHTML = '';
+            
+            appData.baki.forEach(c => {
+                let bal = getLedgerBal(c);
+                let showCustomer = true;
+                let dateSpecificDue = 0;
+
+                if (dateFilter) {
+                    let dayTrans = c.transactions.filter(t => t.date === dateFilter);
+                    if (dayTrans.length === 0) {
+                        showCustomer = false;
+                    } else {
+                        dayTrans.forEach(t => { if(t.type === 'dr') dateSpecificDue += t.amount; });
+                    }
+                }
+
+                if (showCustomer) {
+                    if (dateFilter) {
+                        totalPabo += dateSpecificDue;
+                    } else {
+                        if(bal >= 0) totalPabo += bal; else totalDibo += Math.abs(bal);
+                    }
+                }
+                
+                let searchString = `${c.name} ${c.mobile} ${c.address}`.toLowerCase();
+                if(searchTerm && !searchString.includes(searchTerm)) showCustomer = false;
+                if(amtFilter > 0 && bal < amtFilter) showCustomer = false;
+
+                if (showCustomer) {
+                    let colorClass = bal >= 0 ? 'text-pink-400' : 'text-emerald-400'; 
+                    let statusText = bal >= 0 ? '(পাবো)' : '(দিবো)';
+                    if(bal === 0) { colorClass = 'text-slate-400'; statusText = ''; }
+                    
+                    let dateDueHtml = dateFilter ? `<div class="text-xs text-orange-400 mt-1 font-bold"><i class="fas fa-calendar-day mr-1"></i>ঐ দিনের বকেয়া: ৳${dateSpecificDue}</div>` : '';
+                    
+                    bakiListEl.innerHTML += `<div class="bg-slate-800 p-5 rounded-2xl shadow-lg border border-slate-700 flex justify-between items-center cursor-pointer hover:border-indigo-500 transition" onclick="openBakiLedger(${c.id})">
+                        <div><div class="font-bold text-white text-lg">${c.name} <span class="text-xs text-slate-500 font-normal ml-2">${c.mobile || ''}</span></div><div class="text-xs text-slate-400 mt-1"><i class="fas fa-map-marker-alt mr-1"></i>${c.address || ''}</div>${dateDueHtml}</div>
+                        <div class="flex gap-4 items-center"><div class="text-xl font-bold ${colorClass}">৳${Math.abs(bal).toLocaleString()} <span class="text-xs font-normal">${statusText}</span></div><button onclick="event.stopPropagation(); if(confirm('কাস্টমারটি মুছতে চান?')){ appData.baki = appData.baki.filter(x=>x.id!==${c.id}); updateUI(); }" class="text-slate-500 hover:text-red-500 p-2"><i class="fas fa-trash"></i></button></div></div>`;
+                }
+            });
+            
+            document.getElementById('bakiTotalPabo').innerText = totalPabo.toLocaleString(); 
+            document.getElementById('bakiTotalDibo').innerText = dateFilter ? "--" : totalDibo.toLocaleString();
+            document.getElementById('diboTextLabel').innerText = dateFilter ? "সার্চ রেজাল্ট" : "মোট দিবো (Payable)";
+            
+            if(!dateFilter) {
+                document.getElementById('dashTallyPabo').innerText = totalPabo.toLocaleString();
+            }
+            
+            if(bakiListEl.innerHTML === '') { bakiListEl.innerHTML = `<div class="text-center py-10 text-slate-500 border border-dashed border-slate-700 rounded-2xl">কোনো কাস্টমার পাওয়া যায়নি</div>`; }
+        }
+
+        // PDF GENERATION
+        function downloadBakiLedgerPDF() {
+            const element = document.getElementById('printableBakiLedger');
+            const customer = appData.baki.find(c => c.id === currentBakiCustomerId);
+            const fileName = `Ledger_${customer.name}_${new Date().toISOString().split('T')[0]}.pdf`;
+            element.classList.add('pdf-mode'); showToast("PDF তৈরি হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...");
+            const opt = { margin: 0.5, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+            html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
+                element.classList.remove('pdf-mode'); 
+                const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+                if (navigator.share && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: `${customer.name} - Ledger Account`, text: `Here is the ledger account details for ${customer.name}.`, }).then(() => showToast('PDF শেয়ার করা হয়েছে!')).catch(error => console.error('Share error:', error)); } 
+                else { const link = document.createElement('a'); link.href = URL.createObjectURL(pdfBlob); link.download = fileName; link.click(); showToast("PDF ডাউনলোড করা হয়েছে!"); }
+            });
+        }
+
+        // --- EXPENSE / UTTOLON --- //
+        function addBkashExpenseTransaction() {
+            let editId = document.getElementById('beEditId').value;
+            let date = document.getElementById('beDate').value, note = document.getElementById('beNote').value, amount = document.getElementById('beAmount').value;
+            if(!date || !amount) return showToast("তারিখ এবং পরিমাণ দিন!");
+            
+            if(editId) {
+                let tr = appData.bkashExpense.find(x => x.id == editId);
+                tr.date = date; tr.note = note; tr.amount = Number(amount);
+                document.getElementById('beEditId').value = '';
+                document.getElementById('beFormTitle').innerHTML = '<i class="fas fa-plus-circle mr-2"></i>নতুন এন্ট্রি / পোস্টিং';
+                document.getElementById('beSubmitBtn').innerText = 'পোস্টিং দিন';
+                showToast("এডিট সম্পন্ন হয়েছে!");
+            } else {
+                appData.bkashExpense.push({ id: Date.now(), date, amount: Number(amount), note });
+                showToast("উত্তোলন পোস্টিং সম্পন্ন হয়েছে!");
+            }
+            document.getElementById('beAmount').value = ''; document.getElementById('beNote').value = '';
+            renderBkashExpenseLedger(); updateUI();
+        }
+        function editBkashExpense(id) {
+            let tr = appData.bkashExpense.find(x => x.id == id);
+            document.getElementById('beDate').value = tr.date;
+            document.getElementById('beNote').value = tr.note;
+            document.getElementById('beAmount').value = tr.amount;
+            document.getElementById('beEditId').value = id;
+            document.getElementById('beFormTitle').innerHTML = '<i class="fas fa-edit mr-2 text-yellow-400"></i>উত্তোলন এডিট করুন';
+            document.getElementById('beSubmitBtn').innerText = 'আপডেট করুন';
+        }
+        function deleteBkashExpense(id) {
+            if(confirm("মুছে ফেলতে চান?")) { appData.bkashExpense = appData.bkashExpense.filter(t => t.id !== id); renderBkashExpenseLedger(); updateUI(); showToast("মুছে ফেলা হয়েছে!"); }
+        }
+        function renderBkashExpenseLedger() {
+            let filterMonth = document.getElementById('beFilterMonth').value, tbody = document.getElementById('beTableBody'); tbody.innerHTML = '';
+            let sorted = [...appData.bkashExpense].sort((a,b) => new Date(a.date) - new Date(b.date));
+            sorted.forEach(t => {
+                if(filterMonth && !t.date.startsWith(filterMonth)) return;
+                tbody.innerHTML += `<tr><td class="px-4 py-3">${t.date}</td><td class="px-4 py-3">${t.note || ''}</td><td class="px-4 py-3 text-right text-red-400 font-bold">- ${t.amount}</td><td class="px-4 py-3 text-center text-slate-500">
+                <button onclick="editBkashExpense(${t.id})" class="text-blue-400 mr-2"><i class="fas fa-pen"></i></button>
+                <button onclick="deleteBkashExpense(${t.id})" class="hover:text-red-500"><i class="fas fa-trash"></i></button></td></tr>`;
+            });
+        }
+
+        // --- GEN LEDGER --- //
+        function addDynamicKhat() {
+            let t = document.getElementById('settingCategoryType').value, n = document.getElementById('settingKhatName').value, a = Number(document.getElementById('settingInitialBalance').value)||0;
+            if(!n) return showToast("নাম দিন!");
+            let obj = {id:Date.now(), name:n, isEditing: false}; if(['sim','cash','bank'].includes(t)) obj.amount=a; else { obj.transactions=[]; if(a>0) obj.transactions.push({id:Date.now(), date:today, details:'Opening', type:'dr', amount:a}); }
+            appData[t].push(obj); showToast("খাত যুক্ত হয়েছে!"); updateUI();
+        }
+        function openLedger(t,id) {
+            currentLedgerView = {type:t, id:id}; let i = appData[t].find(x=>x.id===id);
+            document.getElementById('ledgerTitle').innerText = i.name; document.getElementById('ledgerDate').value = today;
+            document.getElementById('genLedgerEditId').value = ''; document.getElementById('ledgerDetails').value = ''; document.getElementById('ledgerAmount').value = '';
+            document.getElementById('genLedgerSaveBtn').innerText = 'Save';
+            renderLedger(i); document.getElementById('ledgerModal').classList.remove('hidden');
+        }
+        function closeLedger() { document.getElementById('ledgerModal').classList.add('hidden'); updateUI(); }
+        
+        function addLedgerTransaction() {
+            let {type,id}=currentLedgerView, d=document.getElementById('ledgerDate').value, det=document.getElementById('ledgerDetails').value, amt=document.getElementById('ledgerAmount').value, trt=document.getElementById('ledgerType').value;
+            let editId = document.getElementById('genLedgerEditId').value;
+            if(!d||!amt) return; 
+            
+            let item = appData[type].find(x=>x.id===id);
+            if(editId) {
+                let tr = item.transactions.find(x=>x.id==editId);
+                if(tr) { tr.date = d; tr.details = det; tr.type = trt; tr.amount = Number(amt); showToast("এডিট করা হয়েছে!"); }
+            } else {
+                item.transactions.push({id:Date.now(), date:d, details:det, type:trt, amount:Number(amt)}); showToast("সেভ হয়েছে!");
+            }
+            renderLedger(item); document.getElementById('genLedgerEditId').value=''; document.getElementById('ledgerAmount').value=''; document.getElementById('ledgerDetails').value=''; document.getElementById('genLedgerSaveBtn').innerText = 'Save';
+        }
+        function editGenLedgerTransaction(tId) {
+            let item = appData[currentLedgerView.type].find(x=>x.id===currentLedgerView.id);
+            let tr = item.transactions.find(x=>x.id==tId);
+            document.getElementById('genLedgerEditId').value = tr.id; document.getElementById('ledgerDate').value = tr.date; document.getElementById('ledgerDetails').value = tr.details; document.getElementById('ledgerType').value = tr.type; document.getElementById('ledgerAmount').value = tr.amount; document.getElementById('genLedgerSaveBtn').innerText = 'Update';
+        }
+        function renderLedger(i) {
+            let tb=document.getElementById('ledgerTableBody'), b=0; tb.innerHTML='';
+            i.transactions.forEach(t=>{ b+=t.type==='dr'?t.amount:-t.amount; tb.innerHTML+=`<tr><td class="px-4 py-3">${t.date}</td><td>${t.details}</td><td class="text-right text-emerald-400">${t.type==='dr'?'+'+t.amount:'-'}</td><td class="text-right text-pink-400">${t.type==='cr'?'-'+t.amount:'-'}</td><td class="text-right font-bold text-white">৳${b}</td><td class="text-center"><button onclick="editGenLedgerTransaction(${t.id})" class="text-blue-400 mr-2"><i class="fas fa-pen"></i></button><button onclick="if(confirm('Delete?')){appData['${currentLedgerView.type}'].find(x=>x.id===${i.id}).transactions=appData['${currentLedgerView.type}'].find(x=>x.id===${i.id}).transactions.filter(x=>x.id!==${t.id});renderLedger(appData['${currentLedgerView.type}'].find(x=>x.id===${i.id}));}" class="text-red-500"><i class="fas fa-trash"></i></button></td></tr>`; });
+            document.getElementById('ledgerCurrentBalance').innerText = b;
+        }
+
+        // --- REPORTS & PROFIT ADJUSTMENT MENU --- //
+        function generateReports() {
+            let mBaki = document.getElementById('reportBakiMonth').value;
+            let amtFilter = Number(document.getElementById('reportBakiMinDue').value) || 0;
+            let bTb = document.getElementById('reportBakiTableBody'); bTb.innerHTML = '';
+            let p=0, d=0;
+
+            appData.baki.forEach(c => {
+                let currentTotalBalance = getLedgerBal(c); 
+                if (amtFilter > 0 && currentTotalBalance < amtFilter) return; 
+
+                let cp=0, cd=0;
+                let monthTransactions = c.transactions.filter(t => t.date.startsWith(mBaki));
+                
+                if(monthTransactions.length > 0 || amtFilter > 0) {
+                    monthTransactions.forEach(t => { if(t.type === 'dr') cp += Number(t.amount); else if(t.type === 'cr') cd += Number(t.amount); });
+                    p += cp; d += cd;
+                    bTb.innerHTML += `<tr><td class="px-4 py-3 font-bold">${c.name}</td><td>${c.mobile}</td>
+                    <td class="text-right text-pink-400 font-bold">${cp>0?cp:'-'}</td><td class="text-right text-emerald-400 font-bold">${cd>0?cd:'-'}</td>
+                    <td class="text-right font-bold ${currentTotalBalance>=0?'text-pink-400':'text-emerald-400'}">৳${Math.abs(currentTotalBalance)}</td></tr>`;
+                }
+            });
+            if(bTb.innerHTML==='') bTb.innerHTML=`<tr><td colspan="5" class="text-center py-4 text-slate-500">ডাটা পাওয়া যায়নি</td></tr>`;
+            document.getElementById('reportBakiPabo').innerText = p; document.getElementById('reportBakiDibo').innerText = d;
+
+            let mMed = document.getElementById('reportMedMonth').value;
+            let sl=0, pr=0, ex=0;
+            appData.mcTransactions.filter(t=>t.date.startsWith(mMed)).forEach(t=>{
+                if(t.type==='MC SALE') sl+=t.amount;
+                if(t.type==='MC PURCHASE') pr+=t.amount;
+                if(t.type==='EXPENSE') ex+=t.amount;
+            });
+            document.getElementById('reportMedSale').innerText = sl; document.getElementById('reportMedPurchase').innerText = pr; document.getElementById('reportMedExpense').innerText = ex;
+            let mSurplus = sl - (pr + ex);
+            document.getElementById('reportMedSurplus').innerText = mSurplus.toLocaleString();
+            
+            let grossProfit = sl * 0.10;
+            let netProfit = grossProfit - ex;
+            document.getElementById('reportGrossProfit').innerText = grossProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('reportExpenseDeduction').innerText = ex.toLocaleString(); document.getElementById('reportNetProfit').innerText = netProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            let netProfitEl = document.getElementById('reportNetProfit');
+            if(netProfit >= 0) { netProfitEl.className = "text-2xl font-bold text-white"; netProfitEl.parentElement.className = "text-center md:text-right bg-emerald-600/20 p-3 rounded-lg border border-emerald-500/30"; } 
+            else { netProfitEl.className = "text-2xl font-bold text-pink-400"; netProfitEl.parentElement.className = "text-center md:text-right bg-pink-600/20 p-3 rounded-lg border border-pink-500/30"; }
+        }
+
+        function getBkashProfit() {
+            let cap = getCatTotal('capital'), sim = getCatTotal('sim'), trn = getCatTotal('transaction');
+            let den = getCatTotal('denadar'), cash = getCatTotal('cash'), bnk = getCatTotal('bank');
+            let uttolon = appData.bkashExpense.reduce((s,t) => s + t.amount, 0);
+            let totalOutstanding = sim + trn + den + cash + bnk + uttolon;
+            return totalOutstanding - cap;
+        }
+
+        function openProfitModal() {
+            let profitAmount = getBkashProfit();
+            if(profitAmount <= 0) return showToast("আজ কোনো প্রফিট নেই হিসাব করার মতো!");
+
+            let select = document.getElementById('profitAdjustSelect');
+            select.innerHTML = '<option value="">-- এডজাস্ট করার খাত বেছে নিন --</option>';
+            const types = [
+                {key: 'capital', label: 'বিকাশ মূলধন'}, {key: 'sim', label: 'সিমের তথ্য'}, 
+                {key: 'transaction', label: 'বিকাশ লেনদেন'}, {key: 'denadar', label: 'A/R-দেনাদার'}, 
+                {key: 'cash', label: 'ক্যাশ'}, {key: 'bank', label: 'ব্যাংক'}
+            ];
+            
+            types.forEach(t => {
+                if(appData[t.key].length > 0) {
+                    let optgroup = document.createElement('optgroup');
+                    optgroup.label = t.label;
+                    appData[t.key].forEach(item => {
+                        let option = document.createElement('option');
+                        option.value = t.key + '|' + item.id;
+                        option.innerText = item.name;
+                        optgroup.appendChild(option);
+                    });
+                    select.appendChild(optgroup);
+                }
+            });
+            
+            document.getElementById('displayProfitAmount').innerText = profitAmount.toLocaleString();
+            document.getElementById('profitAdjustAmount').value = profitAmount; 
+            document.getElementById('profitModal').classList.remove('hidden');
+        }
+
+        function closeProfitModal() {
+            document.getElementById('profitModal').classList.add('hidden');
+        }
+
+        function saveProfitAdjustment() {
+            let val = document.getElementById('profitAdjustSelect').value;
+            let adjAmount = Number(document.getElementById('profitAdjustAmount').value);
+            
+            if(!val) return showToast("খাত নির্বাচন করুন!");
+            if(!adjAmount || adjAmount <= 0) return showToast("সঠিক টাকার পরিমাণ দিন!");
+            
+            let [type, idStr] = val.split('|');
+            let id = Number(idStr);
+            let todayDate = new Date().toISOString().split('T')[0];
+            
+            let item = appData[type].find(x => x.id === id);
+            
+            if(['sim','cash','bank'].includes(type)) {
+                item.amount = Number(item.amount) + adjAmount;
+            } else {
+                item.transactions.push({ id: Date.now(), date: todayDate, details: "Profit Adjustment", type: "dr", amount: adjAmount });
+            }
+            
+            appData.bkashExpense.push({ id: Date.now(), date: todayDate, amount: adjAmount, note: "Profit Transfer to " + item.name });
+            appData.bkashProfitReports.push({ id: Date.now(), date: todayDate, amount: adjAmount, targetKhat: item.name });
+            
+            showToast(`প্রফিট ${item.name} খাতে ৳${adjAmount} এডজাস্ট করা হয়েছে!`);
+            closeProfitModal();
+            generateBkashReport();
+            updateUI();
+        }
+
+        function generateBkashReport() {
+            let month = document.getElementById('reportBkashMonth').value, tbody = document.getElementById('reportBkashTableBody'); tbody.innerHTML = '';
+            appData.bkashProfitReports.filter(r => r.date.startsWith(month)).forEach(r => {
+                let targetLabel = r.targetKhat ? `(খাত: ${r.targetKhat})` : '';
+                tbody.innerHTML += `<tr><td class="px-4 py-3">${r.date}</td><td class="px-4 py-3 text-indigo-300">প্রফিট এডজাস্টমেন্ট <br/><span class="text-xs text-slate-400">${targetLabel}</span></td><td class="px-4 py-3 text-right text-pink-400 font-bold">- ${r.amount}</td><td class="px-4 py-3 text-right text-emerald-400 font-bold">+ ${r.amount}</td><td class="px-4 py-3 text-center text-slate-500"><button onclick="if(confirm('প্রফিট রিপোর্ট মুছতে চান?')){appData.bkashProfitReports=appData.bkashProfitReports.filter(x=>x.id!==${r.id});generateBkashReport();}" class="text-red-500"><i class="fas fa-trash"></i></button></td></tr>`;
+            });
+            if(tbody.innerHTML === '') tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-slate-500">এই মাসে কোনো প্রফিট হিসাব নেই</td></tr>`;
+        }
+
+        // UPDATE UI / DASHBOARD
+        function updateUI() {
+            let adminListEl = document.getElementById('adminList');
+            if(adminListEl) {
+                adminListEl.innerHTML = appData.admins.map(email => 
+                    `<div class="flex justify-between items-center bg-slate-900 p-3 rounded border border-slate-700 text-slate-300">
+                        <span>${email}</span>
+                        <button onclick="deleteAdmin('${email}')" class="text-red-500 hover:text-red-400"><i class="fas fa-trash"></i></button>
+                    </div>`
+                ).join('');
+            }
+
+            let todayDateStr = new Date().toISOString().split('T')[0];
+            let slCount = appData.shortList.filter(i => i.date === todayDateStr).length;
+            if(document.getElementById('dashShortListCount')) {
+                document.getElementById('dashShortListCount').innerText = slCount;
+            }
+
+            let cap = getCatTotal('capital'), sim = getCatTotal('sim'), trn = getCatTotal('transaction');
+            let den = getCatTotal('denadar'), cash = getCatTotal('cash'), bnk = getCatTotal('bank');
+            let uttolon = appData.bkashExpense.reduce((s,t) => s + t.amount, 0);
+            
+            let totalOutstanding = sim + trn + den + cash + bnk + uttolon;
+            
+            document.getElementById('dashTotalCapital').innerText = cap.toLocaleString();
+            document.getElementById('dashTotalOutstanding').innerText = totalOutstanding.toLocaleString();
+            document.getElementById('dashSim').innerText = sim.toLocaleString();
+            document.getElementById('dashTransaction').innerText = trn.toLocaleString();
+            document.getElementById('dashDenadar').innerText = den.toLocaleString();
+            document.getElementById('dashCashBank').innerText = (cash + bnk).toLocaleString();
+            
+            let prof = totalOutstanding - cap;
+            let pEl = document.getElementById('dashProfit'); pEl.innerText = prof.toLocaleString();
+            pEl.parentElement.parentElement.parentElement.className = prof >= 0 
+                ? "bg-gradient-to-br from-emerald-600 to-teal-800 rounded-2xl p-6 shadow-2xl border border-emerald-500/30 relative overflow-hidden" 
+                : "bg-gradient-to-br from-rose-600 to-pink-800 rounded-2xl p-6 shadow-2xl border border-rose-500/30 relative overflow-hidden";
+
+            ['capital','denadar','transaction'].forEach(k => {
+                let el = document.getElementById('headerTotal' + k.charAt(0).toUpperCase() + k.slice(1));
+                if(el) el.innerText = getCatTotal(k).toLocaleString();
+            });
+
+            // Medicine Dash
+            let todayDate = new Date().toISOString().split('T')[0];
+            let mcTotalBal = 0, ts = 0, tex = 0, tb = 0;
+            
+            appData.mcTransactions.forEach(t => {
+                if(t.type === 'MC SALE') mcTotalBal += t.amount;
+                else mcTotalBal -= t.amount;
+                
+                if (t.date === todayDate) {
+                    if (t.type === 'MC SALE') ts += t.amount;
+                    if (t.type === 'EXPENSE') tex += t.amount;
+                }
+            });
+            document.getElementById('dashMedTotalBalance').innerText = mcTotalBal.toLocaleString();
+
+            appData.baki.forEach(c => c.transactions.filter(t => t.date === todayDate && t.type === 'dr').forEach(t => tb += t.amount));
+            document.getElementById('dashMedTodayBaki').innerText = tb.toLocaleString();
+            
+            let tp = (ts * 0.10) - tex;
+            document.getElementById('dashMedTodayProfit').innerText = tp.toFixed(2);
+            document.getElementById('dashMedTodayProfit').className = tp >= 0 ? "text-2xl font-bold text-white" : "text-2xl font-bold text-pink-400";
+
+            updateBakiCustomerList();
+
+            const rl = (t,id) => {
+                let el=document.getElementById(id); if(!el)return;
+                el.innerHTML = appData[t].map(i=>`<div class="bg-slate-800 p-5 rounded-xl border border-slate-700 flex justify-between items-center cursor-pointer hover:border-indigo-500" onclick="openLedger('${t}',${i.id})"><div><div class="font-bold text-white text-lg">${i.name}</div></div><div class="flex gap-4 items-center"><div class="text-xl font-bold text-indigo-400">৳${getLedgerBal(i)}</div><button onclick="event.stopPropagation();if(confirm('Delete?')){appData['${t}']=appData['${t}'].filter(x=>x.id!==${i.id});updateUI();}" class="text-red-500"><i class="fas fa-trash"></i></button></div></div>`).join('');
+            };
+            const rs = (t,id) => {
+                let el=document.getElementById(id); if(!el)return;
+                el.innerHTML = appData[t].map(i=>`<div class="bg-slate-800 p-5 rounded-xl border border-slate-700 flex justify-between items-center">
+                    <div class="font-bold text-white text-lg">${i.name}</div>
+                    <div class="flex items-center gap-2">
+                        ${i.isEditing ? `<input type="number" value="${i.amount}" class="w-24 bg-slate-900 border border-slate-600 rounded p-2 text-white" id="inp_${t}_${i.id}"><button onclick="saveSimpleAmt('${t}', ${i.id}, document.getElementById('inp_${t}_${i.id}').value)" class="bg-emerald-500 text-white px-3 py-2 rounded">Save</button>` : `<span class="text-xl text-indigo-400 font-bold mr-3">৳${i.amount}</span><button onclick="toggleSimpleEdit('${t}', ${i.id})" class="text-blue-400 mr-2"><i class="fas fa-edit"></i></button><button onclick="if(confirm('Delete?')){appData['${t}']=appData['${t}'].filter(x=>x.id!==${i.id});updateUI();}" class="text-red-500"><i class="fas fa-trash"></i></button>`}
+                    </div></div>`).join('');
+            };
+            
+            rl('capital','capitalList'); rl('denadar','denadarList'); rl('transaction','transactionList');
+            rs('sim','simList'); rs('cash','cashList'); rs('bank','bankList'); 
+        }
+        
+        window.onload = () => { 
+            loadInitialData();
+        };
+    </script>
+</body>
+</html>
