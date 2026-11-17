@@ -29,6 +29,10 @@
         @keyframes fadeinToast { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
         @keyframes fadeoutToast { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
 
+        #initialLoader { display: flex; position: fixed; inset: 0; background: #0f172a; z-index: 999999; justify-content: center; align-items: center; flex-direction: column; }
+        .spinner { border: 4px solid rgba(255,255,255,0.1); border-left-color: #6366f1; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px auto;}
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
@@ -43,6 +47,15 @@
     </style>
 </head>
 <body class="h-screen flex overflow-hidden relative">
+
+    <!-- Initial Loading Screen (Do not delete this div) -->
+    <div id="initialLoader">
+        <div class="text-center">
+            <div class="spinner"></div>
+            <h2 class="text-xl font-bold text-white mb-2">ডাটা লোড হচ্ছে...</h2>
+            <p class="text-slate-400 text-sm">অনুগ্রহ করে অপেক্ষা করুন</p>
+        </div>
+    </div>
 
     <!-- Login Overlay -->
     <div id="loginOverlay" class="fixed inset-0 bg-slate-900/95 backdrop-blur-sm z-[99990] flex flex-col items-center justify-center hidden">
@@ -627,7 +640,7 @@
                 <div id="bankList" class="space-y-4"></div>
             </div>
 
-            <!-- GENERAL LEDGER MODAL (UPDATED WITH PDF FEATURE) -->
+            <!-- GENERAL LEDGER MODAL -->
             <div id="ledgerModal" class="hidden fixed inset-0 bg-slate-900/95 z-[100] flex flex-col p-4 md:p-10 backdrop-blur-sm overflow-y-auto">
                 <div class="max-w-4xl w-full mx-auto bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 flex flex-col">
                     <div class="p-6 border-b border-slate-700 flex justify-between items-start bg-slate-800/80 rounded-t-2xl no-print">
@@ -844,23 +857,11 @@
     <div id="toast">Message goes here</div>
 
     <script>
-        // Google Apps Script Web App URL
+        // আপনার নতুন গুগল অ্যাপস স্ক্রিপ্ট ওয়েব অ্যাপ URL
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxtOR0A0mMvS4IiK3WaFtWb_71mDutMnAcn3J1yHm1_Mkldrb2EtrIbIROZUxkM_vaBYg/exec';
         
         let lastSavedDataString = null;
         let isSyncing = false;
-
-        const style = document.createElement('style');
-        style.innerHTML = `
-            .pdf-mode { background: white !important; color: black !important; }
-            .pdf-mode .print-header, .pdf-mode .print-footer { display: block !important; }
-            .pdf-mode .no-print { display: none !important; }
-            .pdf-mode .pdf-table-wrapper { background: white !important; color: black !important; border: 1px solid #ccc; padding: 10px;}
-            .pdf-mode .pdf-table th { background-color: #f1f5f9 !important; color: #334155 !important; border-bottom: 2px solid #cbd5e1; }
-            .pdf-mode .pdf-table td { color: #0f172a !important; border-bottom: 1px solid #e2e8f0; }
-            .pdf-mode .pdf-black { color: #0f172a !important; }
-        `;
-        document.head.appendChild(style);
 
         let today = new Date().toISOString().split('T')[0];
 
@@ -941,6 +942,7 @@
             document.getElementById('mcFilterMonth').value = today.slice(0, 7);
             document.getElementById('beFilterMonth').value = today.slice(0, 7);
 
+            // Hide Loader ALWAYS, then check login
             document.getElementById('initialLoader').style.display = 'none';
             checkLoginStatus();
             updateUI();
@@ -1345,7 +1347,6 @@
             currentLedgerView = {type:t, id:id}; 
             let i = appData[t].find(x=>x.id===id);
             
-            // Set Headers & PDF Info
             let catName = t === 'transaction' ? 'বিকাশ লেনদেন' : (t === 'capital' ? 'বিকাশ মূলধন' : (t === 'denadar' ? 'A/R-দেনাদার' : 'লেজার'));
             document.getElementById('ledgerCategoryName').innerText = catName;
             document.getElementById('ledgerTitle').innerText = i.name;
