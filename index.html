@@ -44,6 +44,42 @@
             #printPad { position: absolute; left: 0; top: 0; width: 100%; color: black; background: white; }
             .no-print { display: none !important; }
         }
+
+        .pdf-mode {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            padding: 16px !important;
+            border-radius: 0 !important;
+        }
+        .pdf-mode .no-print {
+            display: none !important;
+        }
+        .pdf-mode .print-header,
+        .pdf-mode .print-footer {
+            display: block !important;
+        }
+        .pdf-mode .pdf-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            color: #0f172a !important;
+            background-color: #ffffff !important;
+        }
+        .pdf-mode .pdf-thead th {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+            border: 1px solid #cbd5e1 !important;
+        }
+        .pdf-mode .pdf-tbody td {
+            color: #0f172a !important;
+            border: 1px solid #cbd5e1 !important;
+            background-color: #ffffff !important;
+        }
+        .pdf-mode .pdf-black,
+        .pdf-mode span,
+        .pdf-mode td,
+        .pdf-mode th {
+            color: #0f172a !important;
+        }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden relative">
@@ -1323,7 +1359,21 @@
         function downloadBakiLedgerPDF() {
             const element = document.getElementById('printableBakiLedger');
             const customer = appData.baki.find(c => c.id === currentBakiCustomerId);
-            const fileName = `Ledger_${customer.name}_${new Date().toISOString().split('T')[0]}.pdf`;
+            let fromD = document.getElementById('bakiLedgerFromDate') ? document.getElementById('bakiLedgerFromDate').value : '';
+            let toD = document.getElementById('bakiLedgerToDate') ? document.getElementById('bakiLedgerToDate').value : '';
+            if (!fromD && !toD) {
+                const pickedFrom = prompt("শুরুর তারিখ দিন (YYYY-MM-DD) — সব তারিখের জন্য ফাঁকা রেখে OK দিন:", "");
+                if (pickedFrom === null) return;
+                fromD = pickedFrom.trim();
+                const pickedTo = prompt("শেষ তারিখ দিন (YYYY-MM-DD) — আজকের তারিখ বা সব তারিখের জন্য ফাঁকা রেখে OK দিন:", "");
+                if (pickedTo === null) return;
+                toD = pickedTo.trim();
+                if (document.getElementById('bakiLedgerFromDate')) document.getElementById('bakiLedgerFromDate').value = fromD;
+                if (document.getElementById('bakiLedgerToDate')) document.getElementById('bakiLedgerToDate').value = toD;
+                renderBakiTable(customer);
+            }
+            const dateSuffix = (fromD || toD) ? `${fromD || 'start'}_to_${toD || today}` : new Date().toISOString().split('T')[0];
+            const fileName = `Ledger_${customer.name}_${dateSuffix}.pdf`;
             element.classList.add('pdf-mode'); showToast("PDF তৈরি হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...");
             const opt = { margin: 0.5, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
@@ -1440,8 +1490,19 @@
         function downloadGenLedgerPDF() {
             const element = document.getElementById('printableGenLedger');
             const item = appData[currentLedgerView.type].find(c => c.id === currentLedgerView.id);
-            const fromD = document.getElementById('genLedgerFromDate') ? document.getElementById('genLedgerFromDate').value : '';
-            const toD = document.getElementById('genLedgerToDate') ? document.getElementById('genLedgerToDate').value : '';
+            let fromD = document.getElementById('genLedgerFromDate') ? document.getElementById('genLedgerFromDate').value : '';
+            let toD = document.getElementById('genLedgerToDate') ? document.getElementById('genLedgerToDate').value : '';
+            if (!fromD && !toD) {
+                const pickedFrom = prompt("শুরুর তারিখ দিন (YYYY-MM-DD) — সব তারিখের জন্য ফাঁকা রেখে OK দিন:", "");
+                if (pickedFrom === null) return;
+                fromD = pickedFrom.trim();
+                const pickedTo = prompt("শেষ তারিখ দিন (YYYY-MM-DD) — আজকের তারিখ বা সব তারিখের জন্য ফাঁকা রেখে OK দিন:", "");
+                if (pickedTo === null) return;
+                toD = pickedTo.trim();
+                if (document.getElementById('genLedgerFromDate')) document.getElementById('genLedgerFromDate').value = fromD;
+                if (document.getElementById('genLedgerToDate')) document.getElementById('genLedgerToDate').value = toD;
+                renderLedger(item);
+            }
             const dateSuffix = (fromD || toD) ? `${fromD || 'start'}_to_${toD || today}` : new Date().toISOString().split('T')[0];
             const fileName = `Ledger_${item.name}_${dateSuffix}.pdf`;
             
