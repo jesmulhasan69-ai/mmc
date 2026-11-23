@@ -966,12 +966,10 @@
 
             document.getElementById('shortListDate').value = today;
             document.getElementById('mcDate').value = today;
-            if(document.getElementById('beDate')) document.getElementById('beDate').value = today;
             document.getElementById('reportBakiMonth').value = today.slice(0, 7);
             document.getElementById('reportMedMonth').value = today.slice(0, 7);
             document.getElementById('reportBkashMonth').value = today.slice(0, 7);
             document.getElementById('mcFilterMonth').value = today.slice(0, 7);
-            if(document.getElementById('beFilterMonth')) document.getElementById('beFilterMonth').value = today.slice(0, 7);
 
             document.getElementById('initialLoader').style.display = 'none';
             checkLoginStatus();
@@ -979,7 +977,6 @@
             
             if(document.getElementById('mcTableBody')) renderMcLedger(); 
             if(document.getElementById('shortListUl')) renderShortList(); 
-            if(document.getElementById('beTableBody')) renderBkashExpenseLedger();
             generateBkashReport();
 
             try {
@@ -999,8 +996,7 @@
                         updateUI();
                         if(document.getElementById('mcTableBody')) renderMcLedger(); 
                         if(document.getElementById('shortListUl')) renderShortList(); 
-                        if(document.getElementById('beTableBody')) renderBkashExpenseLedger();
-                        generateBkashReport();
+                                    generateBkashReport();
                     } else if (isLocalDirty) {
                         syncNowToServer();
                     }
@@ -1333,51 +1329,9 @@
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
                 element.classList.remove('pdf-mode'); 
                 const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-                if (navigator.share && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: `${customer.name} - Ledger Account`, text: `Here is the ledger account details for ${customer.name}.`, }).then(() => showToast('PDF শেয়ার করা হয়েছে!')).catch(error => console.error('Share error:', error)); } 
+                const dueBanglaMsg = "আপনার বকেয়া হিসাব দেওয়া হলো দ্রুত পরিশোধ করুন";
+                if (navigator.share && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: `${customer.name} - Ledger Account`, text: dueBanglaMsg, }).then(() => showToast('PDF শেয়ার করা হয়েছে!')).catch(error => console.error('Share error:', error)); } 
                 else { const link = document.createElement('a'); link.href = URL.createObjectURL(pdfBlob); link.download = fileName; link.click(); showToast("PDF ডাউনলোড করা হয়েছে!"); }
-            });
-        }
-
-        // --- EXPENSE / UTTOLON --- //
-        function addBkashExpenseTransaction() {
-            let editId = document.getElementById('beEditId').value;
-            let date = document.getElementById('beDate').value, note = document.getElementById('beNote').value, amount = document.getElementById('beAmount').value;
-            if(!date || !amount) return showToast("তারিখ এবং পরিমাণ দিন!");
-            
-            if(editId) {
-                let tr = appData.bkashExpense.find(x => x.id == editId);
-                tr.date = date; tr.note = note; tr.amount = Number(amount);
-                document.getElementById('beEditId').value = '';
-                document.getElementById('beFormTitle').innerHTML = '<i class="fas fa-plus-circle mr-2"></i>নতুন এন্ট্রি / পোস্টিং';
-                document.getElementById('beSubmitBtn').innerText = 'পোস্টিং দিন';
-                showToast("এডিট সম্পন্ন হয়েছে!");
-            } else {
-                appData.bkashExpense.push({ id: Date.now(), date, amount: Number(amount), note });
-                showToast("উত্তোলন পোস্টিং সম্পন্ন হয়েছে!");
-            }
-            document.getElementById('beAmount').value = ''; document.getElementById('beNote').value = '';
-            renderBkashExpenseLedger(); updateUI();
-        }
-        function editBkashExpense(id) {
-            let tr = appData.bkashExpense.find(x => x.id == id);
-            document.getElementById('beDate').value = tr.date;
-            document.getElementById('beNote').value = tr.note;
-            document.getElementById('beAmount').value = tr.amount;
-            document.getElementById('beEditId').value = id;
-            document.getElementById('beFormTitle').innerHTML = '<i class="fas fa-edit mr-2 text-yellow-400"></i>উত্তোলন এডিট করুন';
-            document.getElementById('beSubmitBtn').innerText = 'আপডেট করুন';
-        }
-        function deleteBkashExpense(id) {
-            if(confirm("মুছে ফেলতে চান?")) { appData.bkashExpense = appData.bkashExpense.filter(t => t.id !== id); renderBkashExpenseLedger(); updateUI(); showToast("মুছে ফেলা হয়েছে!"); }
-        }
-        function renderBkashExpenseLedger() {
-            let filterMonth = document.getElementById('beFilterMonth').value, tbody = document.getElementById('beTableBody'); tbody.innerHTML = '';
-            let sorted = [...appData.bkashExpense].sort((a,b) => new Date(a.date) - new Date(b.date));
-            sorted.forEach(t => {
-                if(filterMonth && !t.date.startsWith(filterMonth)) return;
-                tbody.innerHTML += `<tr><td class="px-4 py-3">${t.date}</td><td class="px-4 py-3">${t.note || ''}</td><td class="px-4 py-3 text-right text-red-400 font-bold">- ${t.amount}</td><td class="px-4 py-3 text-center text-slate-500">
-                <button onclick="editBkashExpense(${t.id})" class="text-blue-400 mr-2"><i class="fas fa-pen"></i></button>
-                <button onclick="deleteBkashExpense(${t.id})" class="hover:text-red-500"><i class="fas fa-trash"></i></button></td></tr>`;
             });
         }
 
@@ -1505,11 +1459,12 @@
             html2pdf().set(opt).from(element).outputPdf('blob').then((pdfBlob) => {
                 element.classList.remove('pdf-mode'); 
                 const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+                const dueBanglaMsg = "আপনার বকেয়া হিসাব দেওয়া হলো দ্রুত পরিশোধ করুন";
                 if (navigator.share && navigator.canShare({ files: [file] })) { 
                     navigator.share({ 
                         files: [file], 
                         title: `${item.name} - Ledger`, 
-                        text: `Here is the ledger account details for ${item.name}.`, 
+                        text: dueBanglaMsg, 
                     }).then(() => showToast('PDF শেয়ার করা হয়েছে!')).catch(error => console.error('Share error:', error)); 
                 } else { 
                     const link = document.createElement('a'); link.href = URL.createObjectURL(pdfBlob); link.download = fileName; link.click(); showToast("PDF ডাউনলোড করা হয়েছে!"); 
